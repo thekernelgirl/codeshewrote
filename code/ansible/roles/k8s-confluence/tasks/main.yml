@@ -1,0 +1,40 @@
+---
+- name: Format text into Confluence page
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Read text file
+      shell: cat myfile.txt
+      register: text_content
+
+    - name: Set Confluence page variables
+      set_fact:
+        confluence_page_content: |
+          <h1>{{ confluence_title }}</h1>
+          <p>{{ confluence_description }}</p>
+          <pre>{{ text_content.stdout | to_json }}</pre>
+
+    - name: Create Confluence page
+      uri:
+        url: https://confluence.example.com/rest/api/content
+        method: POST
+        user: admin
+        password: password
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          type: "page"
+          title: "{{ confluence_title }}"
+          space: "{{ confluence_space }}"
+          ancestors:
+            type: "page"
+            id: "{{ confluence_parent_page_id }}"
+          body:
+            storage:
+              value: "{{ confluence_page_content }}"
+              representation: "storage"
+      register: confluence_page
+
+    - debug:
+        var: confluence_page.json

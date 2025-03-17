@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for creating an Elastic Load Balancer (ELB)
+
+Parameters:
+  VpcId:
+    Description: VPC ID where the ELB will be deployed
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Description: Comma-separated list of subnet IDs for the ELB
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      CrossZone: true
+      Subnets: !Ref SubnetIds
+      SecurityGroups: [!Ref SecurityGroupId]
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: '2'
+        UnhealthyThreshold: '2'
+        Interval: '30'
+        Timeout: '5'
+
+Outputs:
+  LoadBalancerDNSName:
+    Description: DNS name of the ELB
+    Value: !GetAtt LoadBalancer.DNSName
+

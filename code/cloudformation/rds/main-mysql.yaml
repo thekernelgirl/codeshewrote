@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MySQLDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: mysql
+      DBInstanceClass: db.t2.micro
+      EngineVersion: '5.7'
+      DBInstanceIdentifier: MyDBInstance
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: adminPassword
+      DBSubnetGroupName: default-vpc-12345678
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp2
+      BackupRetentionPeriod: 7
+      DBSecurityGroups:
+        - Ref: DBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: MyDBInstance
+
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      GroupDescription: Allow access to RDS instance
+      DBSecurityGroupIngress:
+        - EC2SecurityGroupName: default
+

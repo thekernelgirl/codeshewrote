@@ -1,0 +1,15 @@
+---
+- name: Create S3 Bucket
+  amazon.aws.s3_bucket:
+    name: "{{ k8sbucket }}"  # Replace with your desired bucket name
+    acl: authenticated-read
+    public_access:
+        block_public_acls: true
+        ignore_public_acls: true
+        block_public_acls: true
+        restrict_public_buckets: true
+    encryption: "AES256"
+    state: present
+    versioning: true
+    region: us-east-1  # Replace with your desired AWS region
+

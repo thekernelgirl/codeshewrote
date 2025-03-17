@@ -1,0 +1,9 @@
+cluster_name: my-eks-cluster
+region: us-west-2
+vpc_id: vpc-1234567890
+subnets: ["subnet-1234567890", "subnet-0987654321"]
+security_groups: ["sg-1234567890"]
+instance_type: t2.small
+desired_capacity: 3
+max_size: 5
+min_size: 1

@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for Amazon EKS with ECR setup and extra options
+
+Parameters:
+  ClusterName:
+    Description: Name of the EKS cluster
+    Type: String
+  ECRRepositoryName:
+    Description: Name of the ECR repository
+    Type: String
+  InstanceType:
+    Description: EC2 instance type for EKS worker nodes
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t3.small
+      - t3.medium
+      - t3.large
+  DesiredCapacity:
+    Description: Desired number of EC2 instances in the node group
+    Type: Number
+    Default: 2
+  MaxCapacity:
+    Description: Maximum number of EC2 instances in the node group
+    Type: Number
+    Default: 3
+  MinCapacity:
+    Description: Minimum number of EC2 instances in the node group
+    Type: Number
+    Default: 1
+
+Resources:
+  EKSCluster:
+    Type: 'AWS::EKS::Cluster'
+    Properties:
+      Name: !Ref ClusterName
+      RoleArn: !GetAtt EKSServiceRole.Arn
+
+  EKSServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+
+  EKSNodeGroup:
+    Type: 'AWS::EKS::Nodegroup'
+    Properties:
+      ClusterName: !Ref EKSCluster
+      NodegroupName: !Ref ClusterName
+      Subnets: !Ref SubnetIds
+      InstanceTypes:
+        - !Ref InstanceType
+      ScalingConfig:
+        DesiredSize: !Ref DesiredCapacity
+        MaxSize: !Ref MaxCapacity
+        MinSize: !Ref MinCapacity
+      AmiType: AL2_x86_64
+      NodeRole: !GetAtt NodeInstanceRole.Arn
+
+  NodeInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  ECRRepository:
+    Type: 'AWS::ECR::Repository'
+    Properties:
+      RepositoryName: !Ref ECRRepositoryName
+
+Outputs:
+  ClusterNameOutput:
+    Description: Name of the EKS cluster
+    Value: !Ref ClusterName
+  EKSNodegroupNameOutput:
+    Description: Name of the EKS node group
+    Value: !Ref ClusterName
+  ECRRepositoryArn:
+    Description: ARN of the created ECR repository
+    Value: !GetAtt ECRRepository.Arn
+

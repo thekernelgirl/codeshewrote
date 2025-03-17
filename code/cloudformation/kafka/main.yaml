@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MSKCluster:
+    Type: AWS::MSK::Cluster
+    Properties:
+      ClusterName: MyMSKCluster
+      KafkaVersion: 2.8.0
+      NumberOfBrokerNodes: 3
+      EncryptionInfo:
+        EncryptionAtRest:
+          DataVolumeKMSKeyId: <your-kms-key-id>
+      BrokerNodeGroupInfo:
+        InstanceType: kafka.m5.large
+        ClientSubnets:
+          - <your-subnet-id-1>
+          - <your-subnet-id-2>
+        SecurityGroups:
+          - <your-security-group-id>
+      EnhancedMonitoring: DEFAULT
+      LoggingInfo:
+        BrokerLogs:
+          CloudWatchLogs:
+            Enabled: true
+            LogGroup: /aws/msk/MyMSKCluster
+

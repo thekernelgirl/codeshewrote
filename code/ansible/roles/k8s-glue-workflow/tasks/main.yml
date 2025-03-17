@@ -1,0 +1,64 @@
+---
+- name: Create AWS Glue Workflow
+  gather_facts: false
+  tasks:
+    - name: Create Glue Workflow
+      glue:
+        command: create_workflow
+        name: "{{ glue-workflow-name }}"
+        description: "{{ glue-workflow-desc }}"
+
+    - name: Add Python Script 1 as a Glue Job
+      glue:
+        command: create_job
+        name: "{{ glue-notebook-name-stage-1 }}"
+        script_location: "{{ glue-notebook-name-stage-1-s3-location }}"
+        language: PYTHON
+        connections: []
+
+    - name: Add Python Script 2 as a Glue Job
+      glue:
+        command: create_job
+        name: "{{ glue-notebook-name-stage-2 }}"
+        script_location: "{{ glue-notebook-name-stage-2-s3-location }}"
+        language: PYTHON
+        connections: []
+
+    - name: Add Python Script 3 as a Glue Job
+      glue:
+        command: create_job
+        name: "{{ glue-notebook-name-stage-3 }}"
+        script_location: "{{ glue-notebook-name-stage-3-s3-location }}"
+        language: PYTHON
+        connections: []
+
+    - name: Add Python Script 4 as a Glue Job
+      glue:
+        command: create_job
+        name: "{{ glue-notebook-name-stage-4 }}"
+        script_location: "{{ glue-notebook-name-stage-4-s3-location }}"
+        language: PYTHON
+        connections: []
+
+    - name: Add Jobs to Glue Workflow
+      glue:
+        command: create_workflow_run
+        name: "{{ glue-workflow-generation }}"
+        description: "Run of My Glue Workflow"
+        default_run_properties: {}
+        max_concurrent_runs: 1
+        graph: 
+          nodes:
+            - name: "{{ glue-notebook-name-stage-1 }}"
+              type: JOB
+              dependencies: []
+            - name: "{{ glue-notebook-name-stage-2 }}"
+              type: JOB
+              dependencies: ["{{ glue-notebook-name-stage-1 }}"]
+            - name: "{{ glue-notebook-name-stage-3 }}"
+              type: JOB
+              dependencies: ["{{ glue-notebook-name-stage-2 }}"]
+            - name: "{{ glue-notebook-name-stage-4 }}"
+              type: JOB
+              dependencies: ["{{ glue-notebook-name-stage-3 }}"]
+

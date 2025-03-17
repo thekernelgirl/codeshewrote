@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for Athena Data Catalog
+
+Parameters:
+  AthenaBucketName:
+    Description: Name for the S3 bucket used by Athena
+    Type: String
+
+Resources:
+  AthenaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref AthenaBucketName
+      AccessControl: BucketOwnerFullControl
+
+  AthenaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AthenaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: athena.amazonaws.com
+            Action: s3:GetBucketLocation
+            Resource: !Sub arn:aws:s3:::${AthenaBucket}
+          - Effect: Allow
+            Principal:
+              Service: athena.amazonaws.com
+            Action: s3:ListBucket
+            Resource: !Sub arn:aws:s3:::${AthenaBucket}
+          - Effect: Allow
+            Principal:
+              Service: athena.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub arn:aws:s3:::${AthenaBucket}/*
+
+  AthenaQueryExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AthenaQueryExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: athena.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AthenaQueryExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:StopQueryExecution
+                Resource: '*'
+
+Outputs:
+  AthenaBucketOutput:
+    Description: S3 bucket for Athena
+    Value: !Ref AthenaBucket
+  AthenaQueryExecutionRoleOutput:
+    Description: IAM role for Athena query execution
+    Value: !Ref AthenaQueryExecutionRole
+

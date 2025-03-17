@@ -1,0 +1,22 @@
+name: Deploy CloudFormation on PR
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  deploy:
+    name: Deploy CloudFormation Template
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy CloudFormation
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      with:
+        name: your-stack-name
+        template: your-template.yaml
+        capabilities: CAPABILITY_NAMED_IAM

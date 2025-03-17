@@ -1,0 +1,14 @@
+---
+- name: Create Kinesis Firehose Delivery Stream
+  aws_kinesis_firehose_delivery_stream:
+    name: my-firehose-stream
+    state: present
+    delivery_stream_type: DirectPut
+    s3_configuration:
+      role_arn: "arn:aws:iam::123456789012:role/my-firehose-role"
+      bucket_name: "my-s3-bucket"
+      prefix: "firehose/"
+      compression_format: UNCOMPRESSED
+    tags:
+      - key: environment
+        value: production

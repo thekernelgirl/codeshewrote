@@ -1,0 +1,85 @@
+---
+  tasks:
+    - name: Create Redshift cluster
+      community.aws.redshift:
+        command: create
+        node_type: "{{ node_type }}" 
+        identifier: "{{ cluster_name }}"
+        username: "{{ master_username }}"
+        password: "{{ master_password }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        filters:
+          "tag:Name": "{{ subnet_group_name }}"
+
+    - name: Create Redshift cluster subnet group
+      community.aws.redshift_subnet_group:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        state: present
+        region: "{{ region }}"
+        name: "{{ subnet_group_name }}"
+        description: "Redshift subnet group"
+        subnets:
+          - "{{ subnet_facts.subnets[0].id }}"
+          - "{{ subnet_facts.subnets[1].id }}"
+      register: subnet_group
+
+    - name: Create Redshift cluster security group
+      ec2_group:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        name: "{{ security_group_name }}"
+        description: "Redshift security group"
+        vpc_id: "{{ subnet_facts.subnets[0].vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 5439
+            cidr_ip: 0.0.0.0/0
+      register: security_group
+
+    - name: Create Redshift cluster IAM role
+      iam_role:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        name: "{{ iam_role_name }}"
+        state: present
+        assume_role_policy_document: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "redshift.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          }
+      register: iam_role
+
+    - name: Create Redshift cluster
+      redshift:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        cluster_name: "{{ cluster_name }}"
+        node_type: "{{ node_type }}"
+        number_of_nodes: "{{ number_of_nodes }}"
+        database_name: "{{ database_name }}"
+        master_username: "{{ master_username }}"
+        master_password: "{{ master_password }}"
+        subnet_group_name: "{{ subnet_group_name }}"
+        security_groups: "{{ security_group_name }}"
+        iam_roles: "{{ iam_role_name }}"
+        wait: yes
+      register: redshift_cluster
+
+    - name: Print Redshift cluster details
+      debug:
+        var: redshift_cluster

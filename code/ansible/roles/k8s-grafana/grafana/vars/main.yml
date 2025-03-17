@@ -1,0 +1,21 @@
+---
+
+# From http://docs.grafana.org/installation/debian/#apt-repository
+
+grafana_repo_stable:
+  name: "grafana-stable"
+  apt_repo: "deb https://packages.grafana.com/oss/deb stable main"
+  apt_gpg_key: "https://packages.grafana.com/gpg.key"
+  apt_gpg_key_id: "418A7F2FB0E1E6E7EABF6FE8C2E73424D59097AB"
+  yum_gpg_key: "https://packages.grafana.com/gpg.key"
+  yum_gpg_check: yes
+  yum_repo: "https://packages.grafana.com/oss/rpm"
+
+grafana_repo_testing:
+  name: "grafana-testing"
+  apt_repo: "deb https://packages.grafana.com/oss/deb beta main"
+  apt_gpg_key: "https://packages.grafana.com/gpg.key"
+  apt_gpg_key_id: "418A7F2FB0E1E6E7EABF6FE8C2E73424D59097AB"
+  yum_gpg_key: "https://packages.grafana.com/gpg.key"
+  yum_gpg_check: yes
+  yum_repo: "https://packages.grafana.com/oss/rpm-beta"

@@ -1,0 +1,72 @@
+---
+- name: Deploy PostgreSQL with replicas in AWS
+  tasks:
+    - name: Launch PostgreSQL master instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        instance_type: "{{ instance_type }}"
+        image: "ami-12345678"
+        security_group: "{{ security_group }}"
+        subnet_id: "{{ subnet_id }}"
+        key_name: "{{ key_pair }}"
+        count: 1
+        instance_tags:
+          Name: "PostgreSQL-Master"
+      register: master_instance
+
+    - name: Wait for master instance to be running
+      local_action:
+        module: wait_for
+        host: "{{ master_instance.instances[0].public_ip }}"
+        port: 22
+        state: started
+        delay: 10
+        timeout: 300
+
+    - name: Install PostgreSQL on master instance
+      become: true
+      become_user: ubuntu
+      hosts: "{{ master_instance.instances[0].public_ip }}"
+      tasks:
+        - name: Install PostgreSQL
+          apt:
+            name: postgresql-{{ postgres_version }}
+            state: present
+
+    - name: Launch PostgreSQL replica instances
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        instance_type: "{{ instance_type }}"
+        image: "ami-12345678"
+        security_group: "{{ security_group }}"
+        subnet_id: "{{ subnet_id }}"
+        key_name: "{{ key_pair }}"
+        count: "{{ replicas }}"
+        instance_tags:
+          Name: "PostgreSQL-Replica"
+      register: replica_instances
+
+    - name: Wait for replica instances to be running
+      local_action:
+        module: wait_for
+        host: "{{ item.public_ip }}"
+        port: 22
+        state: started
+        delay: 10
+        timeout: 300
+      loop: "{{ replica_instances.instances }}"
+
+    - name: Configure replication on replica instances
+      become: true
+      become_user: ubuntu
+      hosts: "{{ item.public_ip }}"
+      tasks:
+        - name: Configure PostgreSQL replication
+          shell: |
+            sudo -u postgres psql -c "SELECT pg_create_physical_replication_slot('replica_slot');" -d postgres
+            sudo -u postgres pg_basebackup -h {{ master_instance.instances[0].private_ip }} -D /var/lib/postgresql/{{ postgres_version }}/main -U replica --slot replica_slot --wal-method=stream
+          loop: "{{ replica_instances.instances }}"

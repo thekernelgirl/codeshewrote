@@ -1,0 +1,78 @@
+---
+- name: Deploy MySQL with replicas in AWS
+  tasks:
+    - name: Provision MySQL master instance
+      ec2_instance:
+        region: your_aws_region
+        key_name: your_key_pair_name
+        instance_type: your_instance_type
+        image: your_mysql_ami
+        wait: true
+        count: 1
+        instance_tags:
+          Name: mysql-master
+      register: master_instance
+
+    - name: Provision MySQL replica instances
+      ec2_instance:
+        region: your_aws_region
+        key_name: your_key_pair_name
+        instance_type: your_instance_type
+        image: your_mysql_ami
+        wait: true
+        count: "{{ mysql_replica_count }}"
+        instance_tags:
+          Name: mysql-replica
+      register: replica_instances
+
+    - name: Configure MySQL master
+      become: true
+      hosts: "{{ master_instance.instances[0].private_ip }}"
+      tasks:
+        - name: Install MySQL server
+          apt:
+            name: mysql-server-{{ mysql_version }}
+            state: present
+
+        - name: Configure MySQL root password
+          debconf:
+            name: mysql-server-{{ mysql_version }}
+            question: mysql-server/root_password
+            value: "{{ mysql_root_password }}"
+            vtype: password
+
+        - name: Restart MySQL service
+          service:
+            name: mysql
+            state: restarted
+
+    - name: Configure MySQL replicas
+      become: true
+      hosts: "{{ item.private_ip }}"
+      loop: "{{ replica_instances.instances }}"
+      tasks:
+        - name: Install MySQL client
+          apt:
+            name: mysql-client
+            state: present
+
+        - name: Configure MySQL replication
+          mysql_replication:
+            mode: change_master
+            master_host: "{{ master_instance.instances[0].private_ip }}"
+            master_user: root
+            master_password: "{{ mysql_root_password }}"
+            master_port: 3306
+            master_connect_retry: 10
+            until: "mysql -h {{ master_instance.instances[0].private_ip }} -u root -p{{ mysql_root_password }} -e 'SELECT 1'"
+            retries: 10
+            delay: 10
+
+        - name: Start MySQL replication
+          mysql_replication:
+            mode: start_slave
+
+        - name: Restart MySQL service
+          service:
+            name: mysql
+            state: restarted

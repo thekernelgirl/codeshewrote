@@ -1,0 +1,15 @@
+oapiVersion: v1
+kind: Pod
+metadata:
+  name: ansible-runner
+spec:
+  containers:
+    - name: ansible-container
+      image: ansible/ansible-runner
+      command: ["/bin/sh"]
+      args: ["-c", "aws s3 cp s3://celerium-automation/playbooks/ /playbooks && ansible-playbook /playbooks/playbook.yaml"]
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: <changeme>
+        - name: AWS_SECRET_ACCESS_KEY
+          value: <changeme>

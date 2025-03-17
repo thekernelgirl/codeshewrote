@@ -1,0 +1,51 @@
+---
+- name: Create system configuration files and groups
+  become: true
+  tasks:
+    - name: Create /etc/environment file
+      copy:
+        content: |
+          KEY=value
+        dest: /etc/environment
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create /etc/friendly-name file
+      copy:
+        content: |
+          Friendly Name
+        dest: /etc/friendly-name
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create /etc/profile.d/stuff file
+      copy:
+        content: |
+          #!/bin/bash
+          echo "Hello from /etc/profile.d/stuff"
+        dest: /etc/profile.d/stuff
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create /etc/sudoers.d/stuff file
+      copy:
+        content: |
+          someuser ALL=(ALL) NOPASSWD: /usr/bin/somecommand
+        dest: /etc/sudoers.d/stuff
+        owner: root
+        group: root
+        mode: '0440'
+
+    - name: Create github group
+      group:
+        name: github
+        state: present
+
+    - name: Create k8ssh group
+      group:
+        name: k8ssh
+        state: present
+

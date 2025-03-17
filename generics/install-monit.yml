@@ -1,0 +1,40 @@
+- hosts: localhost
+  gather_facts: false
+  become: true
+  tasks:
+    - name: add epel
+      shell: |
+        sudo amazon-linux-extras install epel -y
+    - name: clean evironment 
+      yum:
+        name: monit
+        state: absent
+    - name: wait for timeset
+      shell: |
+        sleep 5
+    - name: install monit & deps
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - openssl-devel
+        - pam-devel 
+        - monit
+    - name: set monit configs
+      lineinfile:
+        dest: /etc/monitrc
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^set\sdaemon', line: 'set daemon 60' }
+        - { regexp: '^set\spidfile', line: 'set pidfile /var/run/monit.pid' }
+        - { regexp: '^set\sidfile', line: 'set idfile /var/.monit.id' }
+        - { regexp: '^set\slog', line: 'set logfile /var/log/monit.log' }
+    - name: enable monit  
+      service:
+        name: monit
+        enabled: yes
+    - name: start monit
+      service:
+        name: monit
+        enabled: yes

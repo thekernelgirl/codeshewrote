@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  PostgreSQLDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgresql
+      DBInstanceClass: db.t2.micro
+      EngineVersion: '12.7'
+      DBInstanceIdentifier: MyPostgreSQLInstance
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: adminPassword
+      DBSubnetGroupName: default-vpc-12345678
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp2
+      BackupRetentionPeriod: 7
+      DBSecurityGroups:
+        - Ref: DBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: MyPostgreSQLInstance
+
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      GroupDescription: Allow access to RDS instance
+      DBSecurityGroupIngress:
+        - EC2SecurityGroupName: default
+

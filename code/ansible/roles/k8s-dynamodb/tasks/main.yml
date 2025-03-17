@@ -1,0 +1,19 @@
+---
+- name: Create DynamoDB table
+  community.aws.dynamodb_table:
+    name: "{{ table_name }}"
+    region: "{{ primary_region }}"
+    hash_key_name: "{{ parition_key}}"
+    hash_key_type: STRING
+    range_key_name: create_time
+    range_key_type: NUMBER
+    read_capacity: 2
+    write_capacity: 2
+    name: "{{ table_name }}"
+    state: present
+    wait: yes
+  register: dynamodb_table
+
+- name: Print DynamoDB table status
+  debug:
+    var: dynamodb_table

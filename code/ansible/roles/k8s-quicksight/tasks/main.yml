@@ -1,0 +1,32 @@
+---
+- name: Setup QuickSight for a user with admin privileges
+  gather_facts: true
+  vars:
+    aws_access_key: YOUR_AWS_ACCESS_KEY
+    aws_secret_key: YOUR_AWS_SECRET_KEY
+    user_name: YOUR_QUICKSIGHT_USER_NAME
+    user_email: YOUR_QUICKSIGHT_USER_EMAIL
+
+  tasks:
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Configure AWS CLI
+      command: aws configure set aws_access_key_id {{ aws_access_key }} && aws configure set aws_secret_access_key {{ aws_secret_key }} && aws configure set default.region us-east-1
+
+    - name: Create QuickSight user
+      command: aws quicksight create-user --aws-account-id YOUR_AWS_ACCOUNT_ID --namespace default --identity-type IAM --user-role ADMIN --session-name {{ user_name }} --email {{ user_email }}
+
+    - name: Get QuickSight user ARN
+      command: aws quicksight describe-user --aws-account-id YOUR_AWS_ACCOUNT_ID --namespace default --user-name {{ user_name }}
+      register: user_info
+
+    - name: Grant admin privileges to the user
+      command: aws quicksight update-user --aws-account-id YOUR_AWS_ACCOUNT_ID --namespace default --user-name {{ user_name }} --role ADMIN --email {{ user_email }}
+
+    - name: Print QuickSight user ARN
+      debug:
+        var: user_info.stdout_lines
+

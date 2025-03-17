@@ -1,0 +1,24 @@
+---
+- name: Apply Kubernetes manifests
+  gather_facts: false
+  tasks:
+    - name: Install kubectl
+      apt:
+        name: kubectl
+        state: present
+    - name: Copy Kubernetes manifests
+      copy:
+        src: /path/to/manifests
+        dest: /tmp/manifests
+    - name: Apply stage 1
+      command: kubectl apply -f ../files/configure.yml
+    - name: Apply stage 2
+      command: kubectl apply -f ../files/configure-stage2.yml
+    - name: Apply stage 3
+      command: kubectl apply -f ../files/configure-stage3.yml
+    - name: Apply stage 4
+      command: kubectl apply -f ../files/configure-stage4.yml
+    - name: Apply stage 5
+      command: kubectl apply -f ../files/configure-stage5.yml
+    - name: Apply stage 6
+      command: kubectl apply -f ../files/configure-stage6.yml

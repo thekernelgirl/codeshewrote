@@ -1,0 +1,43 @@
+---
+- name: Install Datalake with the fast changes
+  tasks:
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+    - name: Create Athena Workgroup
+      command: >
+        aws athena create-work-group
+        --name fast-access
+        --region us-east-1
+        --description "Fast Access Workgroup"
+        --configuration ResultConfiguration="{OutputLocation=s3://your-bucket-name/athena-results/,EncryptionConfiguration={EncryptionOption=SSE_S3}}"
+        --enforce-work-group-configuration
+        --bytes-scanned-cutoff-per-query 1000000000
+        --requester-pays-enabled
+    - name: Create Athena Database
+      command: >
+        aws athena create-database
+        --database-name your-database-name
+        --region us-east-1
+        --work-group fast-access
+    - name: Create Athena Table
+      command: >
+        aws athena start-query-execution
+        --query-string "CREATE EXTERNAL TABLE IF NOT EXISTS your_table_name (
+          column1 string,
+          column2 int,
+          column3 string
+        )
+        ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+        STORED AS PARQUET
+        LOCATION 's3://your-bucket-name/athena-data/'
+        TBLPROPERTIES ('has_encrypted_data'='false');"
+        --region us-east-1
+        --work-group fast-access
+    - name: Grant Athena Query Access
+      command: >
+        aws athena start-query-execution
+        --query-string "GRANT ALL ON DATABASE your-database-name TO GROUP your-athena-query-group;"
+        --region us-east-1
+        --work-group fast-access

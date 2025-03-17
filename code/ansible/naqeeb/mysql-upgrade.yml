@@ -1,0 +1,51 @@
+- hosts: localhost
+# Gather facts about the hosts  
+  gather_facts: false
+# Which user? By defauilt become assumes root
+# Which Tasks
+  environment:
+    AWS_REGION: 'us-east-1'
+    AWS_PROFILE: 'default' 
+  tasks:
+    - name: Add the parameter group
+      # Compare the parameter group differences pre play to determine if any need adding and variablize them
+      community.aws.rds_param_group:
+         state: present
+         name: defaultmysql571
+         description: 'default mysql 5.7.1 parameter group'
+         engine: 'mysql5.7'
+         params:
+           autocommit: '1'
+    - name: provision db
+      community.aws.rds: 
+        command: create
+        instance_name: database-2
+        db_engine: MySQL
+        instance_type: db.t2.micro 
+        size: 10
+        username: admin
+        password: administrator
+        zone: us-east-1f
+        wait: yes
+        wait_timeout: 600
+    - name: create a new replica
+      community.aws.rds:
+        command: replicate
+        instance_name: database-2-crap 
+        source_instance: database-2
+        wait: yes
+        wait_timeout: 600
+    - name: upgrade the replica
+      shell: |
+        aws rds modify-db-instance --db-instance-identifier mydbinstance --engine-version new_version --allow-major-version-upgrade --apply-immediately
+      register: rds
+      ignore_errors: true
+    - name: attach the parameter group
+      community.aws.rds:
+        command: modify
+        instance_name: database-2
+        parameter_group: 'defaultmysql571'
+    - name: promote replica (Change window) 
+      community.aws.rds:
+        command: promote
+        instance_name: database-2-crap

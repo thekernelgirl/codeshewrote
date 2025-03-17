@@ -1,0 +1,59 @@
+---
+- name: Deploy ECS Cluster
+  tasks:
+    - name: Create a VPC
+      ec2_vpc_net:
+        name: MyVPC
+        region: us-east-1
+        cidr_block: 10.0.0.0/16
+      register: vpc_result
+
+    - name: Create Subnets
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ vpc_result.id }}"
+        cidr: "{{ item.cidr }}"
+        az: "{{ item.az }}"
+      loop:
+        - { cidr: 10.0.0.0/24, az: us-east-1a }
+        - { cidr: 10.0.1.0/24, az: us-east-1b }
+
+    - name: Create an Internet Gateway
+      ec2_vpc_igw:
+        vpc_id: "{{ vpc_result.id }}"
+      register: igw_result
+
+    - name: Attach the Internet Gateway
+      ec2_vpc_igw:
+        vpc_id: "{{ vpc_result.id }}"
+        state: present
+        internet_gateway_id: "{{ igw_result.id }}"
+
+    - name: Create a Security Group
+      ec2_group:
+        name: MySecurityGroup
+        description: My Security Group
+        vpc_id: "{{ vpc_result.id }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0  # Restrict the source IP as needed
+
+    - name: Create an ECS Cluster
+      ecs_cluster:
+        name: MyECSTest
+        region: us-east-1
+      register: ecs_cluster_result
+
+    # You can add more tasks to create ECS services, task definitions, etc. as needed
+
+    - name: Display ECS Cluster Information
+      debug:
+        var: ecs_cluster_result
+
+    - name: Clean up AWS resources
+      ec2_vpc_net:
+        id: "{{ vpc_result.id }}"
+        state: absent
+      ignore_errors: yes  # Use with caution; this line 

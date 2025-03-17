@@ -1,0 +1,21 @@
+---
+- name: Install default-jre, redis-tools, wget, curl, unzip, apache2-utils, apt-transport-https, gnupg2, jq, vim, less, groff, openssh-client, awscli, helm
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - default-jre
+    - redis-tools
+    - wget
+    - curl
+    - unzip
+    - apache2-utils
+    - apt-transport-https
+    - gnupg2
+    - jq
+    - vim
+    - less
+    - groff
+    - openssh-client
+    - awscli
+    - helm

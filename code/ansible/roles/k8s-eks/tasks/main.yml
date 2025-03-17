@@ -1,0 +1,17 @@
+---
+- name: Create EKS cluster
+  eks_cluster:
+    name: "{{ cluster_name }}"
+    region: "{{ region }}"
+    vpc_id: "{{ vpc_id }}"
+    subnets: "{{ subnets }}"
+    security_groups: "{{ security_groups }}"
+    instance_type: "{{ instance_type }}"
+    desired_capacity: "{{ desired_capacity }}"
+    max_size: "{{ max_size }}"
+    min_size: "{{ min_size }}"
+  register: eks_cluster_result
+
+- name: Print EKS cluster details
+  debug:
+    var: eks_cluster_result

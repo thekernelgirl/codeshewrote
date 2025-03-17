@@ -1,0 +1,37 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::example-bucket/*",
+            "Condition": {
+                "IpAddress": {
+                    "aws:SourceIp": "203.0.113.0/24"
+                },
+                "StringEquals": {
+                    "aws:UserAgent": "Mozilla/5.0 (compatible; OpenAI-ChatGPT)"
+                },
+                "Bool": {
+                    "aws:SecureTransport": "true"
+                },
+                "StringLike": {
+                    "s3:prefix": ["photos/*", "videos/*"]
+                },
+                "ArnLike": {
+                    "aws:PrincipalArn": "arn:aws:iam::123456789012:user/Alice"
+                },
+                "IpAddressIfExists": {
+                    "aws:SourceIp": ["192.0.2.0/24", "198.51.100.0/24"]
+                },
+                "Null": {
+                    "aws:Referer": "false"
+                },
+                "NumericLessThan": {
+                    "s3:max-keys": 100
+                }
+            }
+        }
+    ]
+}
+

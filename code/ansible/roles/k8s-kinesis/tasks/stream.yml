@@ -1,0 +1,53 @@
+---
+- name: Create Kinesis Stream
+  gather_facts: false
+
+  vars:
+    aws_region: "YOUR_AWS_REGION"
+    kinesis_stream_name: "YOUR_KINESIS_STREAM_NAME"
+    kinesis_shards_count: "YOUR_KINESIS_SHARDS_COUNT"
+
+  tasks:
+    - name: Install boto3 library
+      pip:
+        name: boto3
+
+    - name: Create Kinesis stream
+      become: false
+      environment:
+        AWS_REGION: "{{ aws_region }}"
+      vars:
+        kinesis_stream_description: "Created by Ansible"
+      boto3:
+        resource: "kinesis"
+        mode: "register"
+        region: "{{ aws_region }}"
+        name: "{{ kinesis_stream_name }}"
+        # Additional parameters can be added here, like retention period, etc.
+        action: "create_stream"
+        args:
+          ShardCount: "{{ kinesis_shards_count }}"
+        ignore_errors: yes
+
+    - name: Wait for Kinesis stream to be active
+      become: false
+      environment:
+        AWS_REGION: "{{ aws_region }}"
+      vars:
+        kinesis_wait_timeout: 300
+      boto3:
+        resource: "kinesis"
+        mode: "register"
+        region: "{{ aws_region }}"
+        name: "{{ kinesis_stream_name }}"
+        action: "wait_until_stream_exists"
+        args:
+          WaiterConfig:
+            Delay: 10
+            MaxAttempts: "{{ kinesis_wait_timeout // 10 }}"
+
+    - name: Debug Kinesis stream state
+      debug:
+        msg: "Kinesis stream '{{ kinesis_stream_name }}' created"
+
+    # Additional tasks can be added here, like configuring KCL or other settings.

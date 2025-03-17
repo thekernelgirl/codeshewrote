@@ -1,0 +1,79 @@
+# main.tf
+
+provider "aws" {
+  region = "us-east-1"  # Update with your desired region
+}
+
+variable "workflow_name" {
+  description = "Name of the Glue workflow"
+}
+
+variable "workflow_description" {
+  description = "Description of the Glue workflow"
+}
+
+variable "glue_temp_dir" {
+  description = "S3 path for temporary files used by the Glue workflow"
+}
+
+variable "workflow_graph" {
+  description = "JSON representation of the Glue workflow graph"
+}
+
+resource "aws_glue_workflow" "glue_workflow" {
+  name        = var.workflow_name
+  description = var.workflow_description
+
+  default_run_properties = {
+    "TEMP_DIR" = var.glue_temp_dir
+  }
+}
+
+resource "aws_glue_trigger" "glue_trigger" {
+  name     = "trigger-${aws_glue_workflow.glue_workflow.name}"
+  workflow_name = aws_glue_workflow.glue_workflow.name
+  type     = "ON_DEMAND"
+}
+
+resource "aws_glue_workflow_run_properties" "workflow_run_properties" {
+  name          = "run-${aws_glue_workflow.glue_workflow.name}"
+  workflow_name = aws_glue_workflow.glue_workflow.name
+  run_properties = {
+    "TEMP_DIR" = var.glue_temp_dir
+  }
+}
+
+locals {
+  workflow_steps = jsondecode(var.workflow_graph)
+}
+
+resource "aws_glue_job" "glue_jobs" {
+  for_each = { for step in local.workflow_steps : step.name => step }
+
+  name          = each.value.name
+  role_arn      = each.value.role_arn
+  command {
+    name        = "glueetl"
+    script_location = each.value.script_location
+  }
+  default_arguments = {
+    "--TempDir" = var.glue_temp_dir
+  }
+
+  depends_on = [aws_glue_workflow.glue_workflow, aws_glue_workflow_run_properties.workflow_run_properties]
+}
+
+resource "aws_glue_trigger" "workflow_steps_trigger" {
+  for_each = { for step in local.workflow_steps : step.name => step }
+
+  name     = "trigger-${each.value.name}"
+  type     = "CONDITIONAL"
+  workflow_name = aws_glue_workflow.glue_workflow.name
+  actions {
+    job_name = aws_glue_job.glue_jobs[each.value.name].name
+    arguments = each.value.arguments
+  }
+
+  depends_on = [aws_glue_workflow.glue_workflow, aws_glue_workflow_run_properties.workflow_run_properties]
+}
+

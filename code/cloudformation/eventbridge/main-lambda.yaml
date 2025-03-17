@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  S3EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Event rule to trigger Lambda on S3 events"
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail:
+          eventSource:
+            - "s3.amazonaws.com"
+          eventName:
+            - "ObjectCreated:*"  # Change this to match the S3 event you want to trigger on
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: "LambdaTarget"
+          InputTransformer:
+            InputPathsMap:
+              bucket: "$.detail.requestParameters.bucketName"
+              key: "$.detail.requestParameters.key"
+            InputTemplate: '{"bucket": <bucket>, "key": <key>}'
+          
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: <YOUR_LAMBDA_S3_BUCKET>
+        S3Key: <YOUR_LAMBDA_S3_KEY>
+      Runtime: nodejs14.x
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+

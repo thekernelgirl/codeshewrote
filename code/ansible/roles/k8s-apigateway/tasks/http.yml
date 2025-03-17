@@ -1,0 +1,43 @@
+---
+- name: Create HTTP API Gateway
+  amazon.aws.apigatewayv2.api_gateway_facts:
+    region: "{{ apigateway_region }}"
+  register: apigateway_facts
+  ignore_errors: yes
+  changed_when: false
+
+- name: Check if API Gateway already exists
+  set_fact:
+    api_gateway_exists: "{{ apigateway_name | regex_search(apigateway_facts.apis[].name | default(''), '^(?i)' + apigateway_name + '$') | bool }}"
+  delegate_to: localhost
+
+- name: Create a new API Gateway if it doesn't exist
+  amazon.aws.apigatewayv2.api_gateway:
+    name: "{{ apigateway_name }}"
+    protocol_type: "HTTP"
+    api_type: "HTTP"
+    target: "HTTP"
+    target_configuration: {}
+    cors_configuration: null
+    api_sub_type: "API"
+    description: "{{ apigateway_description }}"
+    version: "1.0"
+    state: present
+  when: not api_gateway_exists
+  register: apigateway_result
+
+- name: Add an HTTP stage to the API Gateway
+  amazon.aws.apigatewayv2.stage:
+    api_id: "{{ apigateway_result.api.id }}"
+    name: "{{ apigateway_stage_name }}"
+    stage_variables: {}
+    auto_deploy: true
+    default_route_settings: {}
+  when: not api_gateway_exists
+
+- name: Get the API Gateway details
+  amazon.aws.apigatewayv2.api_gateway_facts:
+    region: "{{ apigateway_region }}"
+    name: "{{ apigateway_name }}"
+  register: apigateway_details
+  when: api_gateway_exists

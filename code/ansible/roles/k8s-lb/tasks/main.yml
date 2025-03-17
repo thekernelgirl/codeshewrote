@@ -1,0 +1,37 @@
+---
+- name: Create Load Balancer Service
+  k8s:
+    api_version: v1
+    kind: Service
+    namespace: "{{ k8s_namespace }}"
+    name: "{{ k8s_lb_name }}"
+    spec:
+      type: LoadBalancer
+      selector:
+        app: my-app
+      ports:
+        - name: http
+          port: 80
+          target_port: 8080
+
+- name: Create Load Balancer Deployment
+  k8s:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ k8s_namespace }}"
+    name: "{{ k8s_lb_name }}"
+    spec:
+      replicas: 3
+      selector:
+        match_labels:
+          app: my-app
+      template:
+        metadata:
+          labels:
+            app: my-app
+        spec:
+          containers:
+            - name: "{{ k8s_container_name }}"
+              image: "{{ k8s_app_image }}" # Example: my-app-image:latest
+              ports:
+                - containerPort: 8080

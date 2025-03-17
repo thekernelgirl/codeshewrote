@@ -1,0 +1,19 @@
+---
+- name: Enable Timestream
+  become: true
+  vars:
+    region: us-west-2  # Update with your desired region
+
+  tasks:
+    - name: Create Timestream database
+      aws_timestream_write_database:
+        region: "{{ region }}"
+        database_name: my_database  # Update with your desired database name
+
+    - name: Create Timestream table
+      aws_timestream_write_table:
+        region: "{{ region }}"
+        database_name: my_database  # Update with your desired database name
+        table_name: my_table  # Update with your desired table name
+
+    # Add any other necessary tasks to modify the Timestream configuration

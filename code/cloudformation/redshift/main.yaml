@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation Template to create an Amazon Redshift Cluster.
+
+Parameters:
+  ClusterType:
+    Type: String
+    Default: single-node
+    AllowedValues:
+      - single-node
+      - multi-node
+    Description: "Type of the Redshift Cluster (single-node or multi-node)."
+
+  NodeType:
+    Type: String
+    Default: dc2.large
+    Description: "Node type of the Redshift Cluster."
+
+  NumberOfNodes:
+    Type: Number
+    Default: 1
+    Description: "Number of compute nodes in the Redshift cluster. Use only for multi-node type."
+
+  MasterUsername:
+    Type: String
+    Description: "Username for Redshift master user."
+
+  MasterUserPassword:
+    Type: String
+    NoEcho: true
+    Description: "Password for Redshift master user."
+
+  DBName:
+    Type: String
+    Default: "redshiftdb"
+    Description: "Database name for the initial database."
+
+Resources:
+  RedshiftCluster:
+    Type: 'AWS::Redshift::Cluster'
+    Properties:
+      ClusterType: !Ref ClusterType
+      NodeType: !Ref NodeType
+      NumberOfNodes: !If [ IsMultiNode, !Ref NumberOfNodes, !Ref "AWS::NoValue" ]
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      DBName: !Ref DBName
+      Tags:
+        - Key: Name
+          Value: RedshiftCluster
+
+Conditions:
+  IsMultiNode: !Equals [ !Ref ClusterType, "multi-node" ]
+
+Outputs:
+  RedshiftClusterEndpoint:
+    Description: "The endpoint address of the Redshift cluster."
+    Value: !GetAtt RedshiftCluster.Endpoint.Address
+
+  RedshiftClusterJDBCConnectionString:
+    Description: "JDBC connection string for the Redshift cluster."
+    Value: !Sub "jdbc:redshift://${RedshiftCluster.Endpoint.Address}:5439/${DBName}"
+

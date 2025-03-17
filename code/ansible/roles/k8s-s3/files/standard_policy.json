@@ -1,0 +1,32 @@
+{
+    "Version": "2008-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::400376495491:user/automation_user"
+            },
+            "Action": [
+                "s3:GetLifecycleConfiguration",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads"
+            ],
+            "Resource": "arn:aws:s3:::cel-p1-event-400376495491-000"
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::400376495491:user/automation_user"
+            },
+            "Action": [
+                "s3:GetObject",
+                "s3:DeleteObject",
+                "s3:GetObject",
+                "s3:ListMultipartUploadParts",
+                "s3:PutObject",
+                "s3:RestoreObject"
+            ],
+            "Resource": "arn:aws:s3:::cel-p1-event-400376495491-000/*"
+        }
+    ]
+}

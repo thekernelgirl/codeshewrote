@@ -1,0 +1,17 @@
+---
+- name: Scale Kubernetes Pods
+  tasks:
+    - name: Scale pods
+      k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ k8s-deployment-name }}"
+        namespace: "{{ k8s-namespace }}"
+        replicas: "{{ k8s-replicas-count }}"
+        state: present
+      register: result
+
+    - name: Check if scaling was successful
+      debug:
+        msg: "Pods scaled successfully"
+      when: result.changed

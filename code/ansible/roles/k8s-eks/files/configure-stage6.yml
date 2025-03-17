@@ -1,0 +1,42 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: celibate-chipmunk.k8s.local
+  name: nodes-spot
+spec:
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20230616
+  instanceMetadata:
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+  kubelet:
+    evictionHard: memory.available<500Mi,nodefs.available<10%
+    kubeReserved:
+      cpu: 1000m
+      ephemeral-storage: 1Gi
+      memory: 2Gi
+    systemReserved:
+      cpu: 500m
+      ephemeral-storage: 1Gi
+      memory: 1Gi
+  machineType: c5.2xlarge
+  manager: CloudGroup
+  maxSize: 10
+  minSize: 0
+  mixedInstancesPolicy:
+    instances:
+    - c5.2xlarge
+    - c5a.2xlarge
+    - c5ad.2xlarge
+    - c5d.2xlarge
+    - c6i.2xlarge
+    onDemandAboveBase: 0
+    onDemandBase: 0
+    spotAllocationStrategy: capacity-optimized
+  nodeLabels:
+    kops.k8s.io/instancegroup: nodes-spot
+    darkcubed.io/nodegroup: nodes
+  role: Node
+  subnets:
+  - us-west-2a
+

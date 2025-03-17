@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for creating an Application Load Balancer (ALB)
+
+Parameters:
+  VpcId:
+    Description: VPC ID where the ALB will be deployed
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Description: Comma-separated list of subnet IDs for the ALB
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroupId:
+    Description: Security Group ID for the ALB
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyALB
+      Scheme: internet-facing
+      Subnets: !Ref SubnetIds
+      SecurityGroups: [!Ref SecurityGroupId]
+      Tags:
+        - Key: Name
+          Value: MyALB
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: MyTargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+Outputs:
+  LoadBalancerDNSName:
+    Description: DNS name of the ALB
+    Value: !GetAtt LoadBalancer.DNSName
+

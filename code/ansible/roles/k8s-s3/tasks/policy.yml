@@ -1,0 +1,6 @@
+- name: Policy bucket
+  amazon.aws.s3_bucket:
+    name: "{{ k8sbucket }}"  # Replace with your desired bucket name
+    state: present
+    policy: "{{ lookup( 'file','standard_policy.json' )}}"
+    region: us-east-1  # Replace with your desired AWS region

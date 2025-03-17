@@ -1,0 +1,26 @@
+- name: Create AWS WAF WebACL
+  aws_waf_web_acl:
+    name: MyWebACL
+    default_action:
+      type: ALLOW
+    rules:
+      - name: Rule1
+        priority: 1
+        action:
+          type: BLOCK
+        statement:
+          rule_statement:
+            xss_match_statement:
+              field_to_match:
+                type: URI
+              text_transformation: ['NONE']
+              positional_constraint: EXACTLY
+              xss_match_tuple:
+                field_to_match:
+                  type: SINGLE_HEADER
+                  data: User-Agent
+                text_transformation:
+                  - NONE
+              text_transformation: [] # empty list to disable XSS rule
+          visibility_config:
+            sampled_requests_enabled: true

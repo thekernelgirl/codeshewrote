@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  QuickSightInstance:
+    Type: AWS::QuickSight::Dashboard
+    Properties:
+      AwsAccountId: !Ref AWS::AccountId
+      Namespace: default
+      IdentityType: IAM
+      Tags:
+        - Key: Name
+          Value: MyQuickSightInstance
+
+  QuickSightUser:
+    Type: AWS::QuickSight::User
+    Properties:
+      AwsAccountId: !Ref AWS::AccountId
+      Namespace: default
+      UserName: myuser@example.com
+      Email: myuser@example.com
+      UserRole: READER
+

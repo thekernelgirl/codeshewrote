@@ -1,0 +1,7 @@
+---
+include: iam.yml
+include: access.yml
+include: group.yml
+include: securitygrps.yml
+include: ssh.yml
+include: software.yml

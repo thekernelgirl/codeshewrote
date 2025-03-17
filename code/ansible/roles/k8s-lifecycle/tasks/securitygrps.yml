@@ -1,0 +1,63 @@
+---
+- name: Create security groups for EKS
+  gather_facts: true
+  vars:
+    vpc_id: "your_vpc_id"
+    eks_cluster_name: "your_eks_cluster_name"
+    eks_security_group_name: "your_eks_security_group_name"
+    eks_security_group_description: "your_eks_security_group_description"
+    eks_security_group_rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+
+  tasks:
+    - name: Create EKS security group
+      ec2_group:
+        name: "{{ eks_security_group_name }}"
+        description: "{{ eks_security_group_description }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ ansible_ec2_placement_region }}"
+        rules: "{{ eks_security_group_rules }}"
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+      register: eks_security_group
+
+    - name: Add EKS security group to EKS cluster
+      eks_cluster_info:
+        name: "{{ eks_cluster_name }}"
+        region: "{{ ansible_ec2_placement_region }}"
+      register: eks_cluster
+
+    - name: Authorize EKS security group for EKS cluster
+      ec2_group:
+        name: "{{ eks_security_group_name }}"
+        description: "{{ eks_security_group_description }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ ansible_ec2_placement_region }}"
+        rules: "{{ eks_security_group_rules }}"
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+        state: present
+        authorize_egress: yes
+        authorize_ingress: yes
+        purge_rules: yes
+        purge_rules_egress: yes
+        purge_rules_ingress: yes
+        authorize_egress_to_group: "{{ eks_cluster.cluster.security_group_id }}"
+      when: eks_cluster.cluster.security_group_id is defined
+
+    - name: Print EKS security group info
+      debug:
+        var: eks_security_group

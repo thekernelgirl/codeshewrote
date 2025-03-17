@@ -1,0 +1,55 @@
+   {
+      "TableName": "{{ table_name }}",
+      "AttributeDefinitions": [
+         {
+            "AttributeName": "{{ partition_key }}",
+            "AttributeType": "{{ partition_key_type }}"
+         },
+         {
+            "AttributeName": "{{ sort_key }}",
+            "AttributeType": "{{ sort_key_type }}"
+         }
+      ],
+      "KeySchema": [
+         {
+            "AttributeName": "{{ partition_key }}",
+            "KeyType": "HASH"
+         },
+         {
+            "AttributeName": "{{ sort_key }}",
+            "KeyType": "RANGE"
+         }
+      ],
+      "ProvisionedThroughput": {
+         "ReadCapacityUnits": {{ read_capacity_units }},
+         "WriteCapacityUnits": {{ write_capacity_units }}
+      },
+      "Tags": [
+         {
+            "Key": "{{ tag_key }}",
+            "Value": "{{ tag_value }}"
+         }
+      ],
+      "StreamSpecification": {
+         "StreamEnabled": true,
+         "StreamViewType": "NEW_IMAGE"
+      },
+      "ReplicaUpdates": [
+         {
+            "Create": {
+               "RegionName": "{{ replica_region }}",
+               "ReplicaGlobalSecondaryIndexSettingsUpdate": [
+                  {
+                     "IndexName": "{{ gsi_name }}",
+                     "ProvisionedReadCapacityUnits": {{ gsi_read_capacity_units }},
+                     "ProvisionedWriteCapacityUnits": {{ gsi_write_capacity_units }}
+                  }
+               ],
+               "ReplicaProvisionedThroughputOverride": {
+                  "ReadCapacityUnits": {{ replica_read_capacity_units }},
+                  "WriteCapacityUnits": {{ replica_write_capacity_units }}
+               }
+            }
+         }
+      ]
+   }

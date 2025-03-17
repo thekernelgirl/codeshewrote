@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  KeyName:
+    Type: String
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    Description: EC2 instance type
+  SecurityGroupId:
+    Type: String
+    Description: ID of the security group for the EC2 instance
+  SubnetId:
+    Type: String
+    Description: Subnet ID where the EC2 instance will be deployed
+Resources:
+  GrafanaEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      SubnetId: !Ref SubnetId
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          yum install -y https://dl.grafana.com/oss/release/grafana-8.3.2-1.x86_64.rpm
+          systemctl enable grafana-server
+          systemctl start grafana-server
+          systemctl status grafana-server
+

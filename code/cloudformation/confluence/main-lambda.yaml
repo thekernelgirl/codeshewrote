@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ConfluenceExportLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: <YOUR_LAMBDA_S3_BUCKET>
+        S3Key: <YOUR_LAMBDA_S3_KEY>
+      Runtime: python3.8
+      Environment:
+        Variables:
+          CONFLUENCE_USERNAME: "<YOUR_CONFLUENCE_USERNAME>"
+          CONFLUENCE_API_TOKEN: "<YOUR_CONFLUENCE_API_TOKEN>"
+          CONFLUENCE_SPACE_KEY: "<YOUR_CONFLUENCE_SPACE_KEY>"
+          S3_BUCKET_NAME: "<YOUR_S3_BUCKET_NAME>"
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                Resource: !Sub 'arn:aws:s3:::${S3_BUCKET_NAME}/*'
+

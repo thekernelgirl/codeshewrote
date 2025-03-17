@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "ec2:*",
+            "Resource": "*",
+            "Condition": {
+                "DateGreaterThan": {
+                    "aws:CurrentTime": "2024-02-29T08:00:00Z"
+                },
+                "DateLessThan": {
+                    "aws:CurrentTime": "2024-02-29T17:00:00Z"
+                },
+                "BoolIfExists": {
+                    "aws:MultiFactorAuthPresent": "true"
+                },
+                "StringEqualsIfExists": {
+                    "aws:username": "admin"
+                }
+            }
+        }
+    ]
+}
+

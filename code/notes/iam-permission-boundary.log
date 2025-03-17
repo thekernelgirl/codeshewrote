@@ -1,0 +1,23 @@
+Defining Permissions Boundaries:
+
+Permissions boundaries are optional and can be set on IAM entities (users or roles) using an IAM policy.
+When you set a permissions boundary on an IAM entity, you specify a JSON policy that defines the maximum permissions that can be granted to that entity. This policy acts as a boundary that cannot be exceeded by any other policies attached to the entity.
+Restricting Maximum Permissions:
+
+Permissions boundaries allow you to define the maximum permissions that an IAM entity can have, regardless of any other policies attached to the entity.
+If an IAM policy attached to an entity grants permissions beyond the permissions boundary, those permissions are not allowed. The permissions boundary takes precedence and restricts the maximum permissions that can be granted.
+Control Overlapping Permissions:
+
+Permissions boundaries provide a way to control overlapping permissions between IAM policies attached to an entity. Even if multiple policies grant conflicting permissions, the permissions boundary ensures that the maximum permissions do not exceed the defined boundary.
+Granular Control Over Access:
+
+Permissions boundaries enable granular control over access to AWS resources by defining specific limits on the permissions that can be granted.
+By setting permissions boundaries, you can enforce security policies, implement least privilege principles, and mitigate the risk of granting excessive permissions.
+Use Cases:
+
+Permissions boundaries are commonly used in scenarios where you want to delegate administrative access to IAM entities but impose restrictions on the maximum permissions that can be assigned.
+For example, you might set permissions boundaries on IAM roles used by third-party applications or external partners to limit their access to only specific resources or services.
+Effective Permission Management:
+
+Permissions boundaries help organizations effectively manage permissions and enforce security policies by ensuring that IAM entities do not have more permissions than necessary.
+By setting permissions boundaries appropriately, you can reduce the risk of unauthorized access, data breaches, and compliance violations.

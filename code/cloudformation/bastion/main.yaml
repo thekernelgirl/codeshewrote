@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the bastion host
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+      VpcId: <your-vpc-id>
+  
+  BastionInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: <ami-id>
+      InstanceType: t2.micro
+      SecurityGroupIds:
+        - !Ref BastionSecurityGroup
+      KeyName: <your-key-name>
+      SubnetId: <your-subnet-id>
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: <your-kms-key-id>
+

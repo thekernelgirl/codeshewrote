@@ -1,0 +1,16 @@
+---
+- name: Enable AWS Config
+  gather_facts: true
+  tasks:
+    - name: Enable AWS Config
+      aws_config_recorder:
+        name: my-config-recorder
+        role_arn: arn:aws:iam::123456789012:role/config-role
+        state: present
+
+    - name: Start AWS Config Recorder
+      aws_config_delivery_channel:
+        name: my-delivery-channel
+        s3_bucket_name: my-config-bucket
+        sns_topic_arn: arn:aws:sns:us-west-2:123456789012:my-config-topic-arn
+        state: present

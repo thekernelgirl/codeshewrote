@@ -1,0 +1,28 @@
+---
+- name: Install necessary packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - awscli
+    - kubectl
+    - jq
+- name: Configure AWS CLI
+  shell: aws configure set aws_access_key_id YOUR_ACCESS_KEY && aws configure set aws_secret_access_key YOUR_SECRET_ACCESS_KEY && aws configure set default.region "{{ eks_region }}"
+  args:
+    executable: /bin/bash
+- name: Get EKS Cluster details
+  shell: aws eks describe-cluster --name "{{ eks_cluster_name }}" --query 'cluster.{name:name,endpoint:endpoint}' --output json
+  register: eks_cluster
+- name: Generate kubeconfig file
+  shell: aws eks update-kubeconfig --name "{{ eks_cluster_name }}" --region "{{ eks_region }}" --kubeconfig "{{ eks_kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+- name: Configure SSH Agent Forwarding
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: "AllowAgentForwarding yes"
+    state: present
+    regexp: "^AllowAgentForwarding"
+  notify:
+    - restart sshd

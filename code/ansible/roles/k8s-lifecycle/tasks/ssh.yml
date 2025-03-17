@@ -1,0 +1,13 @@
+---
+- name: Create and import SSH key pair
+  tasks:
+    - name: Generate SSH key pair
+      ansible.posix.ssh_keypair:
+        path: /path/to/ssh/key
+        size: 2048
+
+    - name: Import SSH public key
+      authorized_key:
+        user: your_user
+        state: present
+        key: "{{ lookup('file', '/path/to/ssh/key.pub') }}"

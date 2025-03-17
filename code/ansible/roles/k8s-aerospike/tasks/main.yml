@@ -1,0 +1,76 @@
+---
+- name: Provision Aerospike instance in AWS
+  gather_facts: false
+  tasks:
+    - name: Create security group
+      ec2_group:
+        name: "{{ aerospike_security_group }}"
+        description: "Aerospike security group"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 3000
+            to_port: 3000
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 8081
+            to_port: 8081
+            cidr_ip: 0.0.0.0/0
+      register: aerospike_sg
+
+    - name: Launch EC2 instance
+      ec2:
+        key_name: "{{ aerospike_keypair }}"
+        instance_type: "{{ aerospike_instance_type }}"
+        image: "{{ aerospike_ami }}"
+        region: "{{ aws_region }}"
+        group_id: "{{ aerospike_sg.group_id }}"
+        wait: true
+        count: 1
+        instance_tags:
+          Name: "aerospike-instance"
+      register: aerospike_instance
+
+    - name: Wait for SSH to become available
+      wait_for:
+        host: "{{ aerospike_instance.instances[0].public_ip }}"
+        port: 22
+        delay: 10
+        timeout: 120
+
+    - name: Install Aerospike
+      become: true
+      become_user: ec2-user
+      hosts: "{{ aerospike_instance.instances[0].public_ip }}"
+      gather_facts: false
+      tasks:
+        - name: Install dependencies
+          yum:
+            name: "{{ item }}"
+            state: present
+          with_items:
+            - gcc
+            - make
+            - python3
+            - python3-devel
+            - openssl-devel
+
+        - name: Download and install Aerospike
+          shell: |
+            cd /tmp
+            wget -O aerospike.tgz "https://www.aerospike.com/download/server/latest/artifact/el7"
+            tar -xvf aerospike.tgz
+            cd aerospike-server-community-*
+            ./asinstall
+          args:
+            executable: /bin/bash
+
+        - name: Start Aerospike service
+          service:
+            name: aerospike
+            state: started
+            enabled: true

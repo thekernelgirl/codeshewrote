@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  GlueJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: GlueJobPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  GlueJob1:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !GetAtt GlueJobRole.Arn
+      Command:
+        Name: glueetl
+        ScriptLocation: s3://path-to-your-script/script1.py
+      GlueVersion: '2.0'
+      MaxCapacity: 2
+      Timeout: 10
+      WorkerType: G.1X
+
+  GlueJob2:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !GetAtt GlueJobRole.Arn
+      Command:
+        Name: glueetl
+        ScriptLocation: s3://path-to-your-script/script2.py
+      GlueVersion: '2.0'
+      MaxCapacity: 2
+      Timeout: 10
+      WorkerType: G.1X
+
+  GlueJob3:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !GetAtt GlueJobRole.Arn
+      Command:
+        Name: glueetl
+        ScriptLocation: s3://path-to-your-script/script3.py
+      GlueVersion: '2.0'
+      MaxCapacity: 2
+      Timeout: 10
+      WorkerType: G.1X
+
+  GlueWorkflow:
+    Type: AWS::Glue::Workflow
+    Properties:
+      Name: GlueWorkflow
+      Description: Glue Workflow
+
+  GlueWorkflowGraph:
+    Type: AWS::Glue::WorkflowGraph
+    Properties:
+      Name: GlueWorkflowGraph
+      Nodes:
+        - Type: GlueJob
+          Name: GlueJob1
+          DependsOn: []
+          JobRunsOnCompletion:
+            - Type: GlueJob
+              Name: GlueJob2
+              Arguments: {}
+        - Type: GlueJob
+          Name: GlueJob2
+          DependsOn:
+            - GlueJob1
+          JobRunsOnCompletion:
+            - Type: GlueJob
+              Name: GlueJob3
+              Arguments: {}
+        - Type: GlueJob
+          Name: GlueJob3
+          DependsOn:
+            - GlueJob2
+
+  GlueWorkflowTrigger:
+    Type: AWS::Glue::Trigger
+    Properties:
+      Type: SCHEDULED
+      Description: Trigger for Glue Workflow
+      Schedule: cron(0 0 * * ? *)
+      Actions:
+        - WorkflowName: !Ref GlueWorkflow
+

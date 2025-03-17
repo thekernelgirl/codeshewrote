@@ -1,0 +1,31 @@
+---
+- name: Deploy Aurora with 7 replicas
+  tasks:
+    - name: Create Aurora cluster
+      aws_rds_cluster:
+        region: "{{ aws_region }}"
+        name: "{{ aurora_cluster_name }}"
+        engine: aurora
+        master_username: "{{ aurora_master_username }}"
+        master_password: "{{ aurora_master_password }}"
+        instance_type: "{{ aurora_instance_type }}"
+        instance_count: 1
+        wait: yes
+      register: aurora_cluster
+
+    - name: Create Aurora replicas
+      aws_rds_cluster_instance:
+        region: "{{ aws_region }}"
+        cluster_identifier: "{{ aurora_cluster_name }}"
+        instance_type: "{{ aurora_instance_type }}"
+        instance_count: "{{ aurora_replica_count }}"
+        wait: yes
+      register: aurora_replicas
+
+    - name: Print Aurora cluster details
+      debug:
+        var: aurora_cluster
+
+    - name: Print Aurora replica details
+      debug:
+        var: aurora_replicas

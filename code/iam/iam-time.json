@@ -1,0 +1,35 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "ec2:ResourceTag/Environment": "Development"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateVpc",
+                "ec2:DeleteVpc"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "ec2:RequestTag/Environment": "Development"
+                },
+                "DateGreaterThan": {"aws:CurrentTime": "YYYY-MM-DDTHH:MM:SSZ"},
+                "DateLessThan": {"aws:CurrentTime": "YYYY-MM-DDTHH:MM:SSZ"}
+            }
+        }
+    ]
+}
+

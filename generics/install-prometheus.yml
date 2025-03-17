@@ -1,0 +1,51 @@
+---
+- hosts: masters[0]
+  gather_facts: false
+  tasks:
+    - name: copy helm
+      copy:
+        src: "./templates/get_helm.sh"
+        dest: "/tmp/get_helm.sh"
+    - name: fix permissions
+      shell: "chmod 700 /tmp/get_helm.sh"
+    - name: install helm
+      shell: "/tmp/get_helm.sh"
+      ignore_errors: true
+    - name: add helm repo
+      shell: |
+        {{helm_path}} repo add logicmonitor https://logicmonitor.github.com/k8s-helm-charts
+    - name: install lm argus
+      shell: |
+        {{helm_path}} upgrade \
+              --install \
+              --debug \
+              --wait \
+              --cleanup-on-fail \
+              --namespace="default" \
+              --set accessID="{{ access_id }}" \
+              --set accessKey="{{ access_key }}" \
+              --set account="macstadium" \
+              --set enableRBAC=true \
+              --set clusterName="{{ customer }}" \
+              --set clusterGroupID=1015 \
+              --set collector.groupID=15 \
+              --set collector.replicas="1" \
+              --set collector.size="small" \
+              --set collector.escalationChainID=25 \
+              --set imageTag="v3" \
+              argus logicmonitor/argus
+    - name: install lm collectorset-controller
+      shell: |
+        {{helm_path}} upgrade \
+              --install \
+              --debug \
+              --wait \
+              --cleanup-on-fail \
+              --namespace="default" \
+              --set accessID="{{ access_id }}" \
+              --set accessKey="{{ access_key }}" \
+              --set account="macstadium" \
+              --set enableRBAC=true \
+              --set clusterName="{{ customer }}" \
+              --set imageTag="v2" \
+              collectorset-controller logicmonitor/collectorset-controller

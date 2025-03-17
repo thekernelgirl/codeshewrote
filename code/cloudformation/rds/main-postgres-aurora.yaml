@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  AuroraDBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      EngineMode: provisioned
+      DBSubnetGroupName: default-vpc-12345678
+      MasterUsername: admin
+      MasterUserPassword: adminPassword
+      StorageEncrypted: true
+      BackupRetentionPeriod: 7
+      DBClusterIdentifier: MyAuroraDBCluster
+      Tags:
+        - Key: Name
+          Value: MyAuroraDBCluster
+
+  AuroraDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.r5.large
+      Engine: aurora-postgresql
+      DBClusterIdentifier: !Ref AuroraDBCluster
+      DBSubnetGroupName: default-vpc-12345678
+      PubliclyAccessible: false
+      Tags:
+        - Key: Name
+          Value: MyAuroraDBInstance
+

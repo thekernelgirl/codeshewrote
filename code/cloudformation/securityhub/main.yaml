@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for AWS Security Hub setup with extra options
+
+Parameters:
+  EnableImportFindings: 
+    Description: Enable importing findings from other security tools
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+
+Resources:
+  SecurityHub:
+    Type: AWS::SecurityHub::Hub
+    Properties:
+      EnableImportFindings: !Ref EnableImportFindings
+
+Outputs:
+  SecurityHubArn:
+    Description: ARN of the created Security Hub
+    Value: !Ref SecurityHub
+

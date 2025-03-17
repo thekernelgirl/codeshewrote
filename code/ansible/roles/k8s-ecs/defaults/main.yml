@@ -1,0 +1,8 @@
+# defaults/main.yml
+aws_region: us-east-1
+ecs_cluster_name: my-ecs-cluster
+vpc_id: vpc-12345678
+subnets:
+  - subnet-abcdefg
+  - subnet-hijklmn
+security_group_id: sg-12345678

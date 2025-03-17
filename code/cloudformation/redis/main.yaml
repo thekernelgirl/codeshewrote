@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: Redis Cluster
+      ReplicationGroupID: MyRedisCluster
+      CacheNodeType: cache.t3.small
+      Engine: redis
+      EngineVersion: '6.x'
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      AutomaticFailoverEnabled: true
+      NumCacheClusters: 3
+      MultiAZEnabled: true
+      CacheParameterGroupName: default.redis6.x
+      SecurityGroupIds:
+        - !Ref RedisSecurityGroup
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: MyCacheSubnetGroup
+      CacheSubnetGroupDescription: Subnet group for Redis cluster
+      SubnetIds:
+        - subnet-12345678
+        - subnet-23456789
+        - subnet-34567890
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Redis Security Group
+      VpcId: vpc-12345678
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: RedisSecurityGroup
+

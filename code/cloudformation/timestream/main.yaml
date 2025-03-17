@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  TimestreamDatabase:
+    Type: AWS::Timestream::Database
+    Properties:
+      DatabaseName: MyTimestreamDatabase
+      KmsKeyId: <your-kms-key-id>
+      Tags:
+        - Key: Name
+          Value: MyTimestreamDatabase
+  TimestreamTable:
+    Type: AWS::Timestream::Table
+    Properties:
+      DatabaseName: !Ref TimestreamDatabase
+      TableName: MyTimestreamTable
+      RetentionProperties:
+        MemoryStoreRetentionPeriodInHours: 24
+        MagneticStoreRetentionPeriodInDays: 365
+

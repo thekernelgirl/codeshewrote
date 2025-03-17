@@ -1,0 +1,27 @@
+#Remember post install to kube the proper node changes 
+#helm init --kubeconfig <path-to-kubeconfig> --service-account tiller
+#kubectl --kubeconfig <path-to-kubeconfig> get pods -n kube-system | grep tiller
+#
+
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ClusterName:
+    Type: String
+    Description: Name of the EKS cluster where Prometheus will be deployed
+  Namespace:
+    Type: String
+    Description: Namespace for Prometheus deployment
+Resources:
+  PrometheusDeployment:
+    Type: AWS::EKS::Addon
+    Properties:
+      ClusterName: !Ref ClusterName
+      AddonName: prometheus
+      AddonVersion: 15
+      ServiceAccountRoleArn: arn:aws:iam::123456789012:role/eks-addon-role
+      ResolveConflicts: OVERWRITE
+      ServiceAccountName: prometheus
+      Tags:
+        - Key: Name
+          Value: prometheus
+

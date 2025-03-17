@@ -1,0 +1,28 @@
+#!/bin/env ruby
+# Download devops-resources files from S3
+require 'fileutils'
+require 'yaml'
+# The encrypted keys are stored in this directory.
+DEVOPS_ENCRYPTION_KEY = ENV['DEVOPS_ENCRYPTION_KEY']
+RAILS_ENV = ENV['RAILS_ENV']
+DEVOPS_RESOURCES_DIR = '/opt/sage/devops-resources'
+DEVOPS_APPLICATION_KEYS_DIR = "#{DEVOPS_RESOURCES_DIR}/application-keys"
+def download_keys_from_s3
+  # Download devops-resources from AWS S3 into DEVOPS_RESOURCES_DIR
+  FileUtils.mkdir_p(DEVOPS_RESOURCES_DIR, verbose: true)
+  puts "s3cmd -r get --force s3://devops-resources-#{RAILS_ENV} #{DEVOPS_RESOURCES_DIR}"
+  `s3cmd -r get --force s3://devops-resources-#{RAILS_ENV} #{DEVOPS_RESOURCES_DIR}`
+end
+def decrypt_public_keys
+  # Decrypt application-keys
+  FileUtils.chdir(DEVOPS_APPLICATION_KEYS_DIR, verbose: true)
+  application_keys = Dir.glob('*.pub.enc')
+  
+  application_keys.each do |application_key|
+    base_key_name = application_key.gsub('.enc','')
+    puts "#{base_key_name}.enc"
+    `openssl enc -d -aes-256-cbc -in #{base_key_name}.enc -out #{base_key_name} -k #{DEVOPS_ENCRYPTION_KEY}`
+  end
+end
+download_keys_from_s3
+decrypt_public_keys

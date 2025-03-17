@@ -1,0 +1,66 @@
+---
+- hosts: masters[0]
+  gather_facts: false
+  tasks:
+    - name: Retrieve helm binary archive.
+      unarchive:
+        src: https://get.helm.sh/helm-v3.4.0-linux-amd64.tar.gz
+        dest: /tmp
+        creates: /usr/local/bin/helm
+        remote_src: yes    
+    - name: Move helm binary into place.
+      command: cp /tmp/linux-amd64/helm /usr/local/bin/helm
+      args:
+        creates: /usr/local/bin/helm
+    - name: add grafana repository
+      community.kubernetes.helm_repository:
+        name: grafana
+        repo_url: "{{ grafana_repository }}"
+    - name: add prometheus repository
+      community.kubernetes.helm_repository:
+        name: prometheus
+        repo_url: "{{ prometheus_repository }}"
+    - name: install prometheus
+      community.kubernetes.helm:
+        name: prometheus
+        chart_ref: prometheus-community/prometheus
+        release_namespace: default
+        update_repo_cache: true
+      register: prometheus
+    - name: install grafana
+      community.kubernetes.helm:
+        name: grafana
+        chart_ref: grafana/grafana
+        release_namespace: default
+        update_repo_cache: true
+      register: grafana
+    - name: scale grafana down
+      shell: |
+        {{ kubectl_path }} scale deploy grafana --replicas=0
+    - name: copy prometheus config
+      tags:
+      - templates
+      template:
+        src: "prometheus-pvc.yaml.j2"
+        dest: "/tmp/prometheus-pvc.yaml"
+    - name: copy grafana configs
+      tags:
+      - templates
+      template:
+        src: "grafana-config.yaml.j2"
+        dest: "/tmp/grafana-config.yaml"
+    - name: apply grafana config 
+      shell: |
+        {{ kubectl_path }} apply -f /tmp/grafana-config.yaml
+    - name: scale grafana up
+      shell: |
+        {{ kubectl_path }} scale deploy grafana --replicas=1
+    - name: apply pvc configs
+      shell: |
+        {{ kubectl_path }} apply -f /tmp/prometheus-pvc.yaml
+    - name: output grafana post-install
+      debug:
+         var: grafana.stdout_lines
+    - name: output prometheus post-install
+      debug:
+         var: prometheus.stdout_lines

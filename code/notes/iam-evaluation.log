@@ -1,0 +1,27 @@
+Allow Statement:
+
+An Allow statement explicitly grants permissions to perform specific actions on AWS resources.
+When evaluating an IAM policy, if there is an Allow statement that matches the requested action and resource, access is granted regardless of any other policy statements.
+Allow overrides Deny. If there is an Allow statement allowing access to a resource, any Deny statements that might otherwise block access are ignored.
+Allow statements are typically used to grant permissions to users, groups, or roles.
+Deny Statement:
+
+A Deny statement explicitly denies permissions to perform specific actions on AWS resources.
+When evaluating an IAM policy, if there is a Deny statement that matches the requested action and resource, access is explicitly denied, regardless of any other policy statements.
+Deny statements are evaluated after Allow statements. If there is a Deny statement that matches the requested action and resource, access is denied even if there are Allow statements granting access.
+Deny statements are often used to explicitly block certain actions or to enforce security policies.
+Troubleshooting IAM Policy Issues:
+
+Review Policy Documents: Start by reviewing the policy documents associated with the IAM entity (user, group, role) experiencing access issues. Ensure that the policies are correctly written and contain the intended Allow and Deny statements.
+
+Evaluate Policy Evaluation Order: Understand the order in which IAM policy statements are evaluated. Remember that Allow statements take precedence over Deny statements. If access is unexpectedly denied, check for conflicting Deny statements or missing Allow statements.
+
+Check for Explicit Deny Statements: Look for Deny statements that might be explicitly blocking the requested actions. Review the policies to ensure that Deny statements are applied correctly and are not inadvertently blocking access.
+
+Use Policy Simulator: AWS provides a Policy Simulator tool that allows you to simulate IAM policy evaluation based on specific actions, resources, and conditions. Use the Policy Simulator to test how IAM policies will evaluate access requests and identify any issues or unintended consequences.
+
+Monitor AWS CloudTrail Logs: Enable AWS CloudTrail logging to track IAM actions and access attempts. Review CloudTrail logs to identify any errors or unexpected behavior related to IAM policy evaluation.
+
+Enable IAM Access Analyzer: IAM Access Analyzer helps identify resources that are shared with an external entity or are accessible from outside your AWS account. Use IAM Access Analyzer to review findings and ensure that access is granted or denied according to your intended policies.
+
+

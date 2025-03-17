@@ -1,0 +1,28 @@
+- hosts: masters[0]
+  gather_facts: false
+  become: yes
+  tasks:
+    - name: adjust ulimit
+      shell: |
+        sed -i 's/1024:1024/65535:65535/g' /etc/sysconfig/docker
+    - name: restart docker
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: docker
+    - name: wait for docker
+      shell: | 
+        sleep 20
+    - name: restart nodes
+      shell: | 
+        kubectl -n kube-system delete pod -l 'component=kube-apiserver'
+    - name: wait for nodes
+      shell: |
+        sleep 5
+    - name: get nodes
+      shell: | 
+        kubectl get pods -n kube-system
+        register: kube
+    - name: 
+      debug:
+        var: kube.stdout_lines

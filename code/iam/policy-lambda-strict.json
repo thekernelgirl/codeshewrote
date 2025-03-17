@@ -1,0 +1,31 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "lambda:*",
+            "Resource": "arn:aws:lambda:us-east-1:123456789012:function:example-function",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceArn": "arn:aws:s3:::example-bucket"
+                },
+                "StringEqualsIfExists": {
+                    "aws:SourceAccount": "123456789012"
+                },
+                "StringEquals": {
+                    "aws:RequestTag/tag-key": "tag-value"
+                },
+                "StringEqualsIfExists": {
+                    "aws:RequestTag/another-key": "another-value"
+                },
+                "StringLike": {
+                    "aws:Referer": "https://www.example.com/*"
+                },
+                "Null": {
+                    "aws:Via": "true"
+                }
+            }
+        }
+    ]
+}
+

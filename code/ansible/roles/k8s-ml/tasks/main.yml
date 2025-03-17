@@ -1,0 +1,31 @@
+---
+- name: Install AWS CLI
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+- name: Configure AWS CLI
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Configure AWS CLI
+      command: aws configure set aws_access_key_id YOUR_ACCESS_KEY
+      changed_when: false
+    - name: Configure AWS CLI
+      command: aws configure set aws_secret_access_key YOUR_SECRET_ACCESS_KEY
+      changed_when: false
+    - name: Configure AWS CLI
+      command: aws configure set default.region YOUR_REGION
+      changed_when: false
+
+- name: Create SageMaker instance
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create SageMaker instance
+      command: aws sagemaker create-notebook-instance --notebook-instance-name YOUR_INSTANCE_NAME --instance-type ml.t2.medium --role-arn YOUR_ROLE_ARN --subnet-id YOUR_SUBNET_ID --security-group-ids YOUR_SECURITY_GROUP_ID
+      changed_when: false

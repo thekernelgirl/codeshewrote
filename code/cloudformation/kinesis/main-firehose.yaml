@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  FirehoseDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: MyDeliveryStream
+      DeliveryStreamType: DirectPut
+      S3DestinationConfiguration:
+        BucketARN: <your-s3-bucket-arn>
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 5
+        CompressionFormat: UNCOMPRESSED
+        EncryptionConfiguration:
+          NoEncryptionConfig:
+        Prefix: "data/"
+        RoleARN: <your-firehose-role-arn>
+

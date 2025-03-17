@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  GrafanaWorkspace:
+    Type: AWS::AMG::Workspace
+    Properties:
+      WorkspaceName: MyGrafanaWorkspace
+      AuthenticationProviders:
+        - Type: AWS_SSO
+          AwsSso:
+            SsoClientId: <your-aws-sso-client-id>
+            SsoRegion: <your-aws-region>
+            SsoRoleName: <your-aws-sso-role-name>
+      OrganizationRoleName: <your-organization-role-name>
+      WorkspaceDescription: Managed Grafana workspace
+

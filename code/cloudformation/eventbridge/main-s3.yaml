@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  S3EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Event rule to trigger on S3 events"
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail:
+          eventSource:
+            - "s3.amazonaws.com"
+          eventName:
+            - "ObjectCreated:*"  # Change this to match the S3 event you want to trigger on
+      State: "ENABLED"
+      Targets:
+        - Arn: <YOUR_TARGET_ARN>  # Replace this with the ARN of the target you want to invoke
+          Id: "TargetId"
+

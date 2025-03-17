@@ -1,0 +1,57 @@
+Resources:
+  GlueJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: GlueJobPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  GlueJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !GetAtt GlueJobRole.Arn
+      Command:
+        Name: glueetl
+        ScriptLocation: s3://path-to-your-script/script.py
+      DefaultArguments:
+        "--job-language": python
+        "--job-bookmark-option": job-bookmark-enable
+      GlueVersion: "2.0"
+      MaxCapacity: 2
+      Timeout: 10
+      WorkerType: G.1X
+
+  GlueWorkflow:
+    Type: AWS::Glue::Workflow
+    Properties:
+      Name: GlueWorkflow
+      Description: Glue Workflow
+      DefaultRunProperties:
+        JobTimeout: "2880"
+
+  GlueWorkflowTrigger:
+    Type: AWS::Glue::Trigger
+    Properties:
+      Type: SCHEDULED
+      Description: Trigger for Glue Workflow
+      Schedule: cron(0 0 * * ? *)
+      Actions:
+        - JobName: !Ref GlueJob
+          Arguments: {}
+      WorkflowName: !Ref GlueWorkflow
+

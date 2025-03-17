@@ -1,0 +1,113 @@
+- hosts: all
+  connection: local
+  gather_facts: no
+
+  pre_tasks:
+    - debug:
+        var: ansible_limit
+        verbosity: 1
+
+    - name: Limit the playbook run to explicitly named instances.
+      assert:
+        that:
+          - ansible_limit is defined
+          - ansible_limit | trim | length > 4
+          - ansible_limit | wordcount > 0
+        fail_msg: "Instance names are required in the job limit."
+        success_msg: "Limit identified."
+      tags:
+        - always
+
+    - debug:
+        var: resize_instance_to
+        verbosity: 1
+
+    - name: Input validation on expected variables.
+      assert:
+        that:
+          - resize_instance_to is defined
+          - resize_instance_to | trim | length > 3
+          - resize_instance_to | wordcount > 0
+        fail_msg: "A new instance type must be defined in resize_instance_to."
+        success_msg: "New instance type defined."
+      tags:
+        - always
+
+  tasks:
+  - name: Change instance type.
+    block:
+      - name: Stop EC2 instance.
+        ec2:
+          region: "{{ ec2_region }}"
+          instance_ids:
+            - "{{ ec2_id }}"
+          state: stopped
+          wait: yes
+        delegate_to: 127.0.0.1
+        when: ec2_state == "running"
+
+      - name: Previous instance type.
+        debug:
+          var: ec2_instance_type
+
+# ec2 module doesn't support resizing.
+# https://github.com/ansible/ansible/issues/33373#issuecomment-456695343
+      - name: "Resize EC2 instance."
+        shell: >
+          aws ec2 modify-instance-attribute --instance-id "{{ ec2_id }}"
+          --instance-type "{{ resize_instance_to }}" --region "{{ ec2_region }}"
+        delegate_to: 127.0.0.1
+        register: resize_result
+        tags:
+        - skip_ansible_lint
+
+      - debug:
+          var: resize_result
+          verbosity: 1
+
+      - name: Start EC2 instance.
+        ec2:
+          region: "{{ ec2_region }}"
+          instance_ids:
+            - "{{ ec2_id }}"
+          state: running
+          wait: yes
+        delegate_to: 127.0.0.1
+        when: ec2_state == "running"
+
+    rescue:
+      - debug:
+          msg: "Resize failed! Reverting to previous instance type."
+
+      - name: Stop EC2 instance.
+        ec2:
+          region: "{{ ec2_region }}"
+          instance_ids:
+            - "{{ ec2_id }}"
+          state: stopped
+          wait: yes
+        delegate_to: 127.0.0.1
+        when: ec2_state == "running"
+
+      - name: "Revert EC2 instance size."
+        shell: >
+          aws ec2 modify-instance-attribute --instance-id "{{ ec2_id }}"
+          --instance-type "{{ ec2_instance_type }}" --region "{{ ec2_region }}"
+        delegate_to: 127.0.0.1
+        register: revert_result
+        tags:
+        - skip_ansible_lint
+
+      - debug:
+          var: revert_result
+          verbosity: 1
+
+      - name: Start EC2 instance.
+        ec2:
+          region: "{{ ec2_region }}"
+          instance_ids:
+            - "{{ ec2_id }}"
+          state: running
+          wait: no
+        delegate_to: 127.0.0.1
+        when: ec2_state == "running"

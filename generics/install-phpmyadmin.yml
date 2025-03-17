@@ -1,0 +1,45 @@
+- hosts: localhost
+  gather_facts: false
+  become: true
+  tasks:
+    - name: add epel
+      shell: |
+        sudo amazon-linux-extras install epel -y
+    - name: install ssm agent
+      yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+        - amazon-ssm-agent 
+    - name: install RDS Certificate
+      amazon.aws.aws_s3:
+        bucket: mybucket
+        object: /my/desired/key.txt
+        dest: /usr/local/myfile.txt
+        mode: get
+    - name: Install phpmyadmin deps & ruby deps
+      yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+        - amazon-ssm-agent
+        - mariadb-server
+        - httpd
+        - ruby
+    - name: Run Ruby Script (convert this)
+      script: /some/local/AIO_GIT_PULL_TARBALL.rb
+      args:
+        executable: ruby
+    - name: Run Ruby Script (convert this)
+      script: /some/local/Link_latest_release_to_current.rb
+      args:
+        executable: ruby
+    - name: include devops_resources_role
+      include_role:
+        name: <changeme>
+    - name: correct bash vuln
+      shell: patch_bash_vulnerability.sh
+    - name: enable httpd
+    - name: start httpd

@@ -1,0 +1,36 @@
+---
+- name: Create IAM user
+  iam_user:
+    name: my-iam-user
+    state: present
+
+- name: Create IAM role
+  iam_role:
+    name: my-iam-role
+    state: present
+    assume_role_policy_document: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+
+- name: Attach IAM policies to the role
+  iam_policy_attach:
+    policy_arn: "{{ item }}"
+    role: my-iam-role
+  loop:
+    - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+    - arn:aws:iam::aws:policy/AmazonS3FullAccess
+    - arn:aws:iam::aws:policy/IAMFullAccess
+    - arn:aws:iam::aws:policy/AmazonVPCFullAccess
+    - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+    - arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
+    - arn:aws:iam::aws:policy/AmazonRoute53FullAccess

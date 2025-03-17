@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  S3EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Event rule to trigger SNS topic on S3 events"
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail:
+          eventSource:
+            - "s3.amazonaws.com"
+          eventName:
+            - "ObjectCreated:*"  # Change this to match the S3 event you want to trigger on
+      State: "ENABLED"
+      Targets:
+        - Arn: !Ref SNSTopic
+          Id: "SNSTopicTarget"
+  
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "S3EventTopic"
+      TopicName: "S3EventTopic"
+

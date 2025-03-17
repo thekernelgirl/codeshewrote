@@ -1,0 +1,22 @@
+---
+- name: Setup Security Hub and GuardDuty
+  gather_facts: False
+  tasks:
+    - name: Configure AWS CLI
+      aws_configure:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_access_key: "{{ aws_secret_access_key }}"
+        region: "{{ aws_region }}"
+
+    - name: Enable Security Hub
+      command: "aws securityhub enable-security-hub"
+
+    - name: Configure Security Hub standards
+      command: "aws securityhub batch-enable-standards --standards-arns arn:aws:securityhub:{{ aws_region }}::standards/*"
+
+    - name: Create GuardDuty detector
+      command: "aws guardduty create-detector --enable"
+      register: guardduty_detector
+
+    - name: Enable GuardDuty default detectors
+      command: "aws guardduty update-detector --detector-id {{ guardduty_detector.detector.DetectorId }} --enable-default-guardduty"
