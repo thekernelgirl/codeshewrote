@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grove Live Status - Trees of the Grove</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #2D1F1A 0%, #1A0F15 100%);
+            color: #F8F5F0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .grove-container {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(248, 245, 240, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(248, 245, 240, 0.2);
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+        }
+
+        .grove-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #F8F5F0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .publication-card {
+            background: rgba(45, 31, 26, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(224, 218, 210, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .publication-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .publication-card:hover::before {
+            left: 100%;
+        }
+
+        .pub-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #F8F5F0;
+        }
+
+        .pub-description {
+            font-size: 0.9rem;
+            color: #E0DAD2;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-checking {
+            background: #666;
+            color: white;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-live {
+            background: #ff4444;
+            color: white;
+            animation: livePulse 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        }
+
+        .status-offline {
+            background: #333;
+            color: #ccc;
+        }
+
+        .status-error {
+            background: #cc6600;
+            color: white;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+        }
+
+        @keyframes livePulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+            }
+        }
+
+        .live-session-info {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .live-session-info.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .session-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #ff6666;
+        }
+
+        .session-viewers {
+            font-size: 0.8rem;
+            color: #E0DAD2;
+            margin-bottom: 0.5rem;
+        }
+
+        .join-button {
+            background: linear-gradient(135deg, #ff4444 0%, #cc3333 100%);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .join-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        .last-updated {
+            font-size: 0.8rem;
+            color: rgba(224, 218, 210, 0.7);
+            margin-top: 1rem;
+        }
+
+        .controls {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            background: rgba(45, 31, 26, 0.5);
+            color: #F8F5F0;
+            border: 1px solid rgba(224, 218, 210, 0.3);
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: rgba(45, 31, 26, 0.8);
+            border-color: rgba(224, 218, 210, 0.6);
+        }
+
+        .floating-particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(224, 218, 210, 0.3);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grove-container {
+                margin: 1rem;
+                padding: 2rem;
+            }
+
+            .grove-title {
+                font-size: 2rem;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="floating-particles" id="particles"></div>
+
+    <div class="grove-container">
+        <h1 class="grove-title">Grove Live Status</h1>
+
+        <div class="controls">
+            <button class="control-button" onclick="checkAllPublications()">🔄 Check All</button>
+            <button class="control-button" onclick="toggleAutoRefresh()">⏰ Auto Refresh: <span id="autoStatus">OFF</span></button>
+            <button class="control-button" onclick="addCustomPublication()">➕ Add Publication</button>
+        </div>
+
+        <div class="status-grid" id="statusGrid">
+            <!-- Publication cards will be generated here -->
+        </div>
+
+        <div class="last-updated" id="lastUpdated">
+            Never checked - Click "Check All" to begin sensing the grove
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Add your publications here
+        const publications = [
+            {
+                username: 'wendythedruid',
+                name: 'Wendy the Druid',
+                description: 'Geopolitical wisdom, trauma work, and queer trans liberation'
+            },
+            {
+                username: 'keira-of-the-stars', // Replace with actual username
+                name: 'Keira of the Stars',
+                description: 'Speculative fiction from cosmic realms'
+            },
+            {
+                username: 'american-political-turd', // Replace with actual username
+                name: 'The American Political Turd',
+                description: 'Unfiltered political commentary'
+            },
+            {
+                username: 'porch-talk-lisa', // Replace with actual username
+                name: 'Porch Talk With Lisa',
+                description: 'Social commentary with Southern wisdom'
+            },
+            {
+                username: 'poet-miranda', // Replace with actual username
+                name: 'The Poet Miranda',
+                description: 'LGBTQIA+ poetry and lyrical expression'
+            },
+            {
+                username: 'wayfinder-genx', // Replace with actual username
+                name: 'Wayfinder GenX',
+                description: 'Tech, queer liberation, and generational insights'
+            }
+        ];
+
+        let autoRefreshInterval = null;
+        let isAutoRefresh = false;
+
+        // Live detection logic
+        class SubstackLiveDetector {
+            constructor(username) {
+                this.username = username;
+                this.apiUrl = `https://${username}.substack.com/api/v1/posts`;
+            }
+
+            async checkLiveStatus() {
+                try {
+                    // Use a CORS proxy for cross-origin requests
+                    // Note: In production, you'd want to use your own proxy server
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(this.apiUrl + '?limit=5')}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const proxyData = await response.json();
+                    
+                    if (proxyData.status.http_code !== 200) {
+                        throw new Error(`HTTP error! status: ${proxyData.status.http_code}`);
+                    }
+
+                    const data = JSON.parse(proxyData.contents);
+                    
+                    if (data && data.length > 0) {
+                        const latestPost = data[0];
+                        const isLive = this.detectLivePost(latestPost);
+                        
+                        return {
+                            isLive: isLive,
+                            liveSession: isLive ? latestPost : null,
+                            latestPost: latestPost,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                    
+                    return {
+                        isLive: false,
+                        liveSession: null,
+                        latestPost: null,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                } catch (error) {
+                    console.error(`Error checking ${this.username}:`, error);
+                    
+                    // Fallback: try to detect from profile page
+                    return await this.checkLiveStatusFromProfile();
+                }
+            }
+
+            detectLivePost(post) {
+                // Check for live indicators
+                const liveKeywords = ['live', 'streaming', 'going live', 'live now', 'livestream'];
+                const titleLower = (post.title || '').toLowerCase();
+                const hasLiveKeywords = liveKeywords.some(keyword => 
+                    titleLower.includes(keyword)
+                );
+                
+                // Check if post is very recent (within last 15 minutes)
+                const postTime = new Date(post.post_date);
+                const now = new Date();
+                const timeDiff = (now - postTime) / (1000 * 60);
+                const isVeryRecent = timeDiff < 15;
+                
+                return (hasLiveKeywords && isVeryRecent) || post.type === 'live_video';
+            }
+
+            async checkLiveStatusFromProfile() {
+                try {
+                    const profileUrl = `https://${this.username}.substack.com/`;
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(profileUrl)}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const proxyData = await response.json();
+                    const html = proxyData.contents;
+                    
+                    // Look for live session indicators in HTML
+                    const liveIndicators = ['live-indicator', 'LIVE', 'live-video', 'streaming'];
+                    const hasLiveIndicators = liveIndicators.some(indicator => 
+                        html.toLowerCase().includes(indicator.toLowerCase())
+                    );
+                    
+                    return {
+                        isLive: hasLiveIndicators,
+                        method: 'html-scraping',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                } catch (error) {
+                    console.error(`Error checking profile ${this.username}:`, error);
+                    return {
+                        isLive: false,
+                        error: error.message,
+                        timestamp: new Date().toISOString()
+                    };
+                }
+            }
+        }
+
+        // UI Management
+        function createPublicationCard(pub, status = null) {
+            const card = document.createElement('div');
+            card.className = 'publication-card';
+            card.id = `card-${pub.username}`;
+            
+            card.innerHTML = `
+                <div class="pub-name">${pub.name}</div>
+                <div class="pub-description">${pub.description}</div>
+                <div class="status-indicator status-checking" id="status-${pub.username}">
+                    ○ Checking Grove...
+                </div>
+                <div class="live-session-info" id="session-${pub.username}">
+                    <div class="session-title" id="title-${pub.username}"></div>
+                    <div class="session-viewers" id="viewers-${pub.username}"></div>
+                    <a href="#" class="join-button" id="join-${pub.username}" target="_blank">
+                        🌲 Enter the Grove
+                    </a>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function updatePublicationStatus(username, result) {
+            const statusElement = document.getElementById(`status-${username}`);
+            const sessionElement = document.getElementById(`session-${username}`);
+            
+            if (result.error) {
+                statusElement.textContent = '⚠ Grove Obscured';
+                statusElement.className = 'status-indicator status-error';
+                sessionElement.classList.remove('show');
+                return;
+            }
+            
+            if (result.isLive) {
+                statusElement.innerHTML = '🔴 LIVE NOW';
+                statusElement.className = 'status-indicator status-live';
+                
+                if (result.liveSession) {
+                    document.getElementById(`title-${username}`).textContent = result.liveSession.title || 'Live Session Active';
+                    document.getElementById(`viewers-${username}`).textContent = 'Join the gathering...';
+                    document.getElementById(`join-${username}`).href = `https://${username}.substack.com/`;
+                    sessionElement.classList.add('show');
+                } else {
+                    sessionElement.classList.remove('show');
+                }
+            } else {
+                statusElement.textContent = '○ Grove at Rest';
+                statusElement.className = 'status-indicator status-offline';
+                sessionElement.classList.remove('show');
+            }
+        }
+
+        async function checkSinglePublication(pub) {
+            const detector = new SubstackLiveDetector(pub.username);
+            const result = await detector.checkLiveStatus();
+            updatePublicationStatus(pub.username, result);
+            return result;
+        }
+
+        async function checkAllPublications() {
+            document.getElementById('lastUpdated').textContent = 'Sensing the grove activity...';
+            
+            // Reset all to checking status
+            publications.forEach(pub => {
+                const statusElement = document.getElementById(`status-${pub.username}`);
+                if (statusElement) {
+                    statusElement.textContent = '○ Sensing...';
+                    statusElement.className = 'status-indicator status-checking';
+                }
+            });
+            
+            const promises = publications.map(pub => checkSinglePublication(pub));
+            
+            try {
+                await Promise.all(promises);
+                const now = new Date().toLocaleString();
+                document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
+            } catch (error) {
+                console.error('Error checking publications:', error);
+                document.getElementById('lastUpdated').textContent = `Error during check: ${error.message}`;
+            }
+        }
+
+        function toggleAutoRefresh() {
+            isAutoRefresh = !isAutoRefresh;
+            const statusSpan = document.getElementById('autoStatus');
+            
+            if (isAutoRefresh) {
+                statusSpan.textContent = 'ON';
+                autoRefreshInterval = setInterval(checkAllPublications, 30000); // 30 seconds
+                checkAllPublications(); // Check immediately
+            } else {
+                statusSpan.textContent = 'OFF';
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        }
+
+        function addCustomPublication() {
+            const username = prompt('Enter Substack username (without .substack.com):');
+            if (username && username.trim()) {
+                const name = prompt('Enter display name:') || username;
+                const description = prompt('Enter description:') || 'Custom publication';
+                
+                const newPub = {
+                    username: username.trim(),
+                    name: name.trim(),
+                    description: description.trim()
+                };
+                
+                publications.push(newPub);
+                initializeGrid();
+            }
+        }
+
+        function createParticles() {
+            const particleContainer = document.getElementById('particles');
+            particleContainer.innerHTML = ''; // Clear existing particles
+            
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                particleContainer.appendChild(particle);
+            }
+        }
+
+        function initializeGrid() {
+            const grid = document.getElementById('statusGrid');
+            grid.innerHTML = '';
+            
+            publications.forEach(pub => {
+                const card = createPublicationCard(pub);
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            initializeGrid();
+            
+            // Optional: Check all publications on load
+            // checkAllPublications();
+        });
+
+        // Recreate particles periodically for continuous effect
+        setInterval(createParticles, 10000);
+    </script>
+</body>
+
+</html>
