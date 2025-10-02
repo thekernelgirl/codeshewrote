@@ -14,13 +14,15 @@ provider "aws" {
     tags = {
       Environment = var.environment
       ManagedBy   = "Terraform"
-      Application = "IIS-WebServer"
+      Application = var.project_name
+      Product     = var.product_name
     }
   }
 }
 
 # Data sources
 data "aws_ami" "windows_server" {
+  count       = var.ami_id == "" ? 1 : 0
   most_recent = true
   owners      = ["amazon"]
 
@@ -35,15 +37,69 @@ data "aws_ami" "windows_server" {
   }
 }
 
+locals {
+  ami_id = var.ami_id != "" ? var.ami_id : data.aws_ami.windows_server[0].id
+  vpc_id = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default.id
+  subnet_ids = length(var.subnet_ids) > 0 ? var.subnet_ids : data.aws_subnets.default.ids
+  s3_bucket_name = var.s3_bucket_name != "" ? var.s3_bucket_name : "${var.project_name}-${var.environment}-${random_id.bucket_suffix.hex}"
+}
+
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
 data "aws_vpc" "default" {
-  default = true
+  default = var.vpc_id == "" ? true : false
+  id      = var.vpc_id != "" ? var.vpc_id : null
 }
 
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+    values = [local.vpc_id]
   }
+}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# S3 Bucket for Application Data
+resource "aws_s3_bucket" "app_data" {
+  bucket = local.s3_bucket_name
+
+  tags = {
+    Name        = "${var.project_name}-app-data-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_s3_bucket_versioning" "app_data" {
+  bucket = aws_s3_bucket.app_data.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "app_data" {
+  bucket = aws_s3_bucket.app_data.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "app_data" {
+  bucket = aws_s3_bucket.app_data.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # IAM Role for EC2 Instance
@@ -64,7 +120,10 @@ resource "aws_iam_role" "iis_server_role" {
   })
 
   tags = {
-    Name = "${var.project_name}-iis-server-role-${var.environment}"
+    Name        = "${var.project_name}-iis-server-role-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
   }
 }
 
@@ -95,7 +154,8 @@ resource "aws_iam_role_policy" "otel_telemetry_policy" {
           "s3:PutObject"
         ]
         Resource = [
-          "arn:aws:s3:::*"
+          aws_s3_bucket.app_data.arn,
+          "${aws_s3_bucket.app_data.arn}/*"
         ]
       },
       {
@@ -133,7 +193,10 @@ resource "aws_iam_instance_profile" "iis_server_profile" {
   role = aws_iam_role.iis_server_role.name
 
   tags = {
-    Name = "${var.project_name}-iis-server-profile-${var.environment}"
+    Name        = "${var.project_name}-iis-server-profile-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
   }
 }
 
@@ -141,7 +204,7 @@ resource "aws_iam_instance_profile" "iis_server_profile" {
 resource "aws_security_group" "iis_server_sg" {
   name        = "${var.project_name}-iis-server-sg-${var.environment}"
   description = "Security group for IIS web server with OTEL"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = local.vpc_id
 
   # HTTP
   ingress {
@@ -207,7 +270,101 @@ resource "aws_security_group" "iis_server_sg" {
   }
 
   tags = {
-    Name = "${var.project_name}-iis-server-sg-${var.environment}"
+    Name        = "${var.project_name}-iis-server-sg-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Application Load Balancer Target Group (if enabled)
+resource "aws_lb_target_group" "iis_tg" {
+  count    = var.enable_load_balancer ? 1 : 0
+  name     = "${var.project_name}-iis-tg-${var.environment}"
+  port     = var.target_group_port
+  protocol = "HTTP"
+  vpc_id   = local.vpc_id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 5
+    interval            = 30
+    path                = var.health_check_path
+    matcher             = "200"
+  }
+
+  tags = {
+    Name        = "${var.project_name}-iis-tg-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Application Load Balancer (if no existing ARN provided)
+resource "aws_lb" "iis_alb" {
+  count              = var.enable_load_balancer && var.load_balancer_arn == "" ? 1 : 0
+  name               = "${var.project_name}-iis-alb-${var.environment}"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.iis_server_sg.id]
+  subnets           = slice(tolist(local.subnet_ids), 0, min(length(local.subnet_ids), 2))
+
+  enable_deletion_protection = false
+  enable_http2              = true
+
+  tags = {
+    Name        = "${var.project_name}-iis-alb-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
+  }
+}
+
+# ALB Listener
+resource "aws_lb_listener" "iis_listener" {
+  count             = var.enable_load_balancer && var.load_balancer_arn == "" ? 1 : 0
+  load_balancer_arn = aws_lb.iis_alb[0].arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.iis_tg[0].arn
+  }
+
+  tags = {
+    Name        = "${var.project_name}-iis-listener-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
+  }
+}
+
+# ALB Listener Rule (example)
+resource "aws_lb_listener_rule" "iis_rule" {
+  count        = var.enable_load_balancer && var.load_balancer_arn == "" ? 1 : 0
+  listener_arn = aws_lb_listener.iis_listener[0].arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.iis_tg[0].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/*"]
+    }
+  }
+
+  tags = {
+    Name        = "${var.project_name}-iis-rule-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
   }
 }
 
@@ -491,9 +648,10 @@ EOT
 
 # EC2 Instance with IIS and OTEL
 resource "aws_instance" "iis_server" {
-  ami                    = data.aws_ami.windows_server.id
+  ami                    = local.ami_id
   instance_type          = var.instance_type
-  subnet_id              = tolist(data.aws_subnets.default.ids)[0]
+  subnet_id              = tolist(local.subnet_ids)[0]
+  availability_zone      = var.availability_zone != "" ? var.availability_zone : data.aws_availability_zones.available.names[0]
   vpc_security_group_ids = [aws_security_group.iis_server_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.iis_server_profile.name
   key_name               = var.key_name != "" ? var.key_name : null
@@ -505,7 +663,10 @@ resource "aws_instance" "iis_server" {
     delete_on_termination = true
 
     tags = {
-      Name = "${var.project_name}-iis-server-root-volume-${var.environment}"
+      Name        = "${var.project_name}-iis-server-root-volume-${var.environment}"
+      Product     = var.product_name
+      Application = var.project_name
+      Environment = var.environment
     }
   }
 
@@ -526,6 +687,11 @@ resource "aws_instance" "iis_server" {
     Install-WindowsFeature -Name Web-Mgmt-Console
     Install-WindowsFeature -Name NET-Framework-45-Core
     Install-WindowsFeature -Name NET-Framework-45-ASPNET
+    
+    # Install SSM Agent (usually pre-installed on Windows AMIs, but ensure it's running)
+    Write-Host "Ensuring SSM Agent is running..." -ForegroundColor Yellow
+    Start-Service AmazonSSMAgent -ErrorAction SilentlyContinue
+    Set-Service AmazonSSMAgent -StartupType Automatic -ErrorAction SilentlyContinue
     
     # Install OpenTelemetry Collector
     Write-Host "Installing OpenTelemetry Collector..." -ForegroundColor Yellow
@@ -756,11 +922,22 @@ ${local_file.otel_config.content}
 
   tags = {
     Name              = "${var.project_name}-iis-server-${var.environment}"
+    Product           = var.product_name
+    Application       = var.project_name
+    Environment       = var.environment
     Role              = "WebServer"
     OS                = "WindowsServer2022"
     Observability     = "OpenTelemetry"
     TelemetryExporter = "AWS-CloudWatch-XRay"
   }
+}
+
+# Target Group Attachment (if load balancer enabled)
+resource "aws_lb_target_group_attachment" "iis_tg_attachment" {
+  count            = var.enable_load_balancer ? 1 : 0
+  target_group_arn = aws_lb_target_group.iis_tg[0].arn
+  target_id        = aws_instance.iis_server.id
+  port             = var.target_group_port
 }
 
 # Elastic IP
@@ -769,8 +946,41 @@ resource "aws_eip" "iis_server_eip" {
   domain   = "vpc"
 
   tags = {
-    Name = "${var.project_name}-iis-server-eip-${var.environment}"
+    Name        = "${var.project_name}-iis-server-eip-${var.environment}"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
   }
+}
+
+# Route 53 Record (if enabled)
+resource "aws_route53_record" "iis_dns" {
+  count   = var.enable_route53 && var.route53_zone_id != "" ? 1 : 0
+  zone_id = var.route53_zone_id
+  name    = var.route53_domain_name
+  type    = "A"
+  ttl     = 300
+  records = [aws_eip.iis_server_eip.public_ip]
+}
+
+# Route 53 Record for Load Balancer (if both enabled)
+resource "aws_route53_record" "iis_alb_dns" {
+  count   = var.enable_route53 && var.enable_load_balancer && var.route53_zone_id != "" ? 1 : 0
+  zone_id = var.route53_zone_id
+  name    = "alb.${var.route53_domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = var.load_balancer_arn != "" ? var.load_balancer_arn : aws_lb.iis_alb[0].dns_name
+    zone_id               = var.load_balancer_arn != "" ? data.aws_lb.existing[0].zone_id : aws_lb.iis_alb[0].zone_id
+    evaluate_target_health = true
+  }
+}
+
+# Data source for existing load balancer (if ARN provided)
+data "aws_lb" "existing" {
+  count = var.load_balancer_arn != "" ? 1 : 0
+  arn   = var.load_balancer_arn
 }
 
 # CloudWatch Log Group for OTEL
@@ -780,6 +990,8 @@ resource "aws_cloudwatch_log_group" "otel_logs" {
 
   tags = {
     Name        = "${var.project_name}-otel-logs-${var.environment}"
-    Application = "IIS-WebServer"
+    Product     = var.product_name
+    Application = var.project_name
+    Environment = var.environment
   }
 }
