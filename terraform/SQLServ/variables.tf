@@ -244,17 +244,17 @@ variable "enable_cloudwatch_logs_exports" {
 }
 
 # SQL Server Specific Configuration
-variable "sql_server_timezone" {
-  description = "SQL Server timezone"
-  type        = string
-  default     = "UTC"
-}
+#variable "sql_server_timezone" {
+#  description = "SQL Server timezone"
+#  type        = string
+#  default     = "UTC"
+#}
 
-variable "sql_server_collation" {
-  description = "SQL Server collation"
-  type        = string
-  default     = "SQL_Latin1_General_CP1_CI_AS"
-}
+#variable "sql_server_collation" {
+#  description = "SQL Server collation"
+#  type        = string
+#  default     = "SQL_Latin1_General_CP1_CI_AS"
+#}
 
 variable "sql_server_backup_compression" {
   description = "Enable backup compression"
@@ -292,11 +292,11 @@ variable "sql_server_sql_server_agent" {
   default     = true
 }
 
-variable "sql_server_trustworthy" {
-  description = "Enable trustworthy database property"
-  type        = bool
-  default     = false
-}
+#variable "sql_server_trustworthy" {
+#  description = "Enable trustworthy database property"
+#  type        = bool
+#  default     = false
+#}
 
 # OpenTelemetry Configuration
 variable "enable_otel" {
@@ -305,23 +305,23 @@ variable "enable_otel" {
   default     = true
 }
 
-variable "otel_endpoint" {
-  description = "OpenTelemetry endpoint"
-  type        = string
-  default     = ""
-}
+#variable "otel_endpoint" {
+#  description = "OpenTelemetry endpoint"
+#  type        = string
+#  default     = ""
+#}
 
-variable "enable_xray_tracing" {
-  description = "Enable AWS X-Ray tracing"
-  type        = bool
-  default     = true
-}
+#variable "enable_xray_tracing" {
+#  description = "Enable AWS X-Ray tracing"
+#  type        = bool
+#  default     = true
+#}
 
-variable "custom_metrics_namespace" {
-  description = "Custom CloudWatch metrics namespace"
-  type        = string
-  default     = "MSSQL/Custom"
-}
+#variable "custom_metrics_namespace" {
+#  description = "Custom CloudWatch metrics namespace"
+#  type        = string
+#  default     = "MSSQL/Custom"
+#}
 
 # Tagging
 variable "tags" {
@@ -347,17 +347,17 @@ variable "alarm_cpu_threshold" {
   default     = 80
 }
 
-variable "alarm_memory_threshold" {
-  description = "Memory alarm threshold percentage"
-  type        = number
-  default     = 80
-}
+#variable "alarm_memory_threshold" {
+#  description = "Memory alarm threshold percentage"
+#  type        = number
+#  default     = 80
+#}
 
-variable "alarm_disk_queue_depth_threshold" {
-  description = "Disk queue depth alarm threshold"
-  type        = number
-  default     = 64
-}
+#variable "alarm_disk_queue_depth_threshold" {
+#  description = "Disk queue depth alarm threshold"
+#  type        = number
+#  default     = 64
+#}
 
 variable "alarm_free_storage_space_threshold" {
   description = "Free storage space alarm threshold in bytes"
@@ -378,37 +378,37 @@ variable "enable_vpc_flow_logs" {
   default     = true
 }
 
-variable "flow_log_destination_type" {
-  description = "Flow log destination type (cloud-watch-logs or s3)"
-  type        = string
-  default     = "cloud-watch-logs"
-}
+#variable "flow_log_destination_type" {
+#  description = "Flow log destination type (cloud-watch-logs or s3)"
+#  type        = string
+#  default     = "cloud-watch-logs"
+#}
 
 # Backup Configuration
-variable "enable_automated_backups" {
-  description = "Enable automated backups"
-  type        = bool
-  default     = true
-}
+#variable "enable_automated_backups" {
+#  description = "Enable automated backups"
+#  type        = bool
+#  default     = true
+#}
 
-variable "enable_point_in_time_recovery" {
-  description = "Enable point-in-time recovery"
-  type        = bool
-  default     = true
-}
+#variable "enable_point_in_time_recovery" {
+#  description = "Enable point-in-time recovery"
+#  type        = bool
+#  default     = true
+#}
 
-variable "backup_s3_bucket_name" {
-  description = "S3 bucket name for manual backups"
-  type        = string
-  default     = ""
-}
+#variable "backup_s3_bucket_name" {
+#  description = "S3 bucket name for manual backups"
+#  type        = string
+#  default     = ""
+#}
 
 # Security Scanning
-variable "enable_security_scanning" {
-  description = "Enable security scanning"
-  type        = bool
-  default     = true
-}
+#variable "enable_security_scanning" {
+#  description = "Enable security scanning"
+#  type        = bool
+#  default     = true
+#}
 
 variable "enable_config_rules" {
   description = "Enable AWS Config rules"
