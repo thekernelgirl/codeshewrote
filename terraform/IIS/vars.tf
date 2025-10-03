@@ -46,11 +46,11 @@ variable "key_name" {
   default     = ""
 }
 
-variable "otel_endpoint" {
-  description = "OTEL collector endpoint (leave empty for local collector)"
-  type        = string
-  default     = ""
-}
+#variable "otel_endpoint" {
+#  description = "OTEL collector endpoint (leave empty for local collector)"
+#  type        = string
+#  default     = ""
+#}
 
 variable "otel_service_name" {
   description = "Service name for OTEL telemetry"
