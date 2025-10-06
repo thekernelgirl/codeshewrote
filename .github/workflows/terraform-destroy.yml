@@ -1,0 +1,48 @@
+name: Terraform Destroy (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          # prod intentionally excluded - require direct access
+      confirmation:
+        description: 'Type DESTROY to confirm'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirmation == 'DESTROY'
+    
+    environment:
+      name: ${{ github.event.inputs.environment }}-destroy
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', github.event.inputs.environment)] }}
+          aws-region: us-east-1
+      
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.0'
+      
+      - name: Terraform Init
+        run: terraform init
+        working-directory: environments/${{ github.event.inputs.environment }}
+      
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
+        working-directory: environments/${{ github.event.inputs.environment }}
