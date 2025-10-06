@@ -40,9 +40,6 @@ provider "cloudflare" {
   alias     = "cf"
 }
 
-# ============================================
-# AMI lookup – Find latest Windows Server 2022
-# ============================================
 data "aws_ami" "windows_server_2022" {
   most_recent = true
   owners      = ["amazon"]
@@ -58,9 +55,6 @@ data "aws_ami" "windows_server_2022" {
   }
 }
 
-# ===========================
-# ENI – we tag it up front 💅
-# ===========================
 resource "aws_network_interface" "bfm_eni" {
   subnet_id         = var.subnet_id_a
   private_ips       = var.private_ip != "" ? [var.private_ip] : null
@@ -77,9 +71,6 @@ resource "aws_network_interface" "bfm_eni" {
   )
 }
 
-# ===========================
-# EC2 instance – Windows W22
-# ===========================
 resource "aws_instance" "bfm_app" {
   ami                         = data.aws_ami.windows_server_2022.id
   instance_type               = var.ec2_bfm_type
@@ -125,7 +116,7 @@ resource "aws_instance" "bfm_app" {
     instance_metadata_tags      = "enabled"
   }
 
-  # 🌶️ Rename host, prep IIS, SSL, drive E:, deploy content, generate healthcheck
+  # rename host, prep IIS, SSL, drive E:, deploy content, generate healthcheck
   user_data = <<-EOT
     <powershell>
     $ErrorActionPreference = "Stop"
@@ -242,9 +233,6 @@ resource "aws_instance" "bfm_app" {
   depends_on = [aws_network_interface.bfm_eni]
 }
 
-# ===========================
-# Elastic IP – tag the EIP 🌶️
-# ===========================
 resource "aws_eip" "bfm_eip" {
   domain            = "vpc"
   network_interface = aws_network_interface.bfm_eni.id
@@ -259,9 +247,6 @@ resource "aws_eip" "bfm_eip" {
   )
 }
 
-# =================================================
-# Route 53 – private and public A records for BFM 🧭
-# =================================================
 # Private record: bfm-<client>.bfm.cloud -> instance private IP
 resource "aws_route53_record" "bfm_private" {
   zone_id = var.route53_private_zone_id
@@ -293,9 +278,6 @@ resource "aws_route53_record" "bfm_public_apex" {
   }
 }
 
-# ===========================================
-# Cloudflare – mirror public DNS (optional) ⚡
-# ===========================================
 resource "cloudflare_record" "cf_bfm_remote" {
   provider = cloudflare.cf
   count    = var.enable_cloudflare ? 1 : 0
@@ -320,9 +302,6 @@ resource "cloudflare_record" "cf_bfm_apex" {
   proxied = false
 }
 
-# ==============================================
-# ALB Target Group + Listener Rule (HTTPS:443) 🔊
-# ==============================================
 resource "aws_lb_target_group" "bfm_tg" {
   name        = "tg-bfm-${var.client_code}-${var.environment}"
   port        = 443
